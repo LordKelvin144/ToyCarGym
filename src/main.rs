@@ -47,7 +47,7 @@ async fn main() {
         state = state.update(&input, dt, &config);
 
         // Draw the car
-        draw_car(&state, &config);
+        draw_car(&state, &input, &config);
 
         mq::next_frame().await
     }
