@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Div, Neg};
 use num_traits::{Signed, Float};
 
 
@@ -29,6 +29,28 @@ where
     }
 }
 
+impl<T> Neg for Vec2<T>
+where
+    T: Neg<Output = T> + Copy
+{
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Vec2(-self.0, -self.1)
+    }
+}
+
+impl<T> Div<T> for Vec2<T>
+where
+    T: Div<Output = T> + Copy,
+{
+    type Output = Self;
+
+    fn div(self, rhs: T) -> Self {
+        Vec2(self.0 / rhs, self.1 / rhs)
+    }
+}
+
 impl<T> Vec2<T>
 where
     T: Signed,
@@ -44,6 +66,10 @@ where
 {
     pub fn norm(self) -> T {
         (self.0 * self.0 + self.1 * self.1).sqrt()
+    }
+
+    pub fn normalized(self) -> Self {
+        self / self.norm()
     }
 }
 

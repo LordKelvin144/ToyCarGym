@@ -3,7 +3,10 @@ use crate::math_utils::Vec2;
 
 #[derive(Debug)]
 pub struct CarConfig {
-    length: f32,
+    pub length: f32,
+    pub max_delta: f32,
+    pub acceleration: f32,
+    pub brake_acceleration: f32
 }
 
 #[derive(Debug, Clone)]
@@ -12,10 +15,22 @@ pub struct CarState {
     pub velocity: Vec2::<f32>
 }
 
+impl Default for CarState {
+    fn default() -> Self { 
+        CarState {position: Vec2(0.0, 0.0), velocity: Vec2(8.0, 0.0) }
+    }
+}
+
 #[derive(Debug)]
 pub struct CarInput {
     pub forward_acc: f32,
     pub steer_delta: f32
+}
+
+impl Default for CarInput {
+    fn default() -> Self {
+        CarInput { forward_acc: 0.0, steer_delta: 0.0 }
+    }
 }
 
 
@@ -29,13 +44,13 @@ fn inv_turn_radius(config: &CarConfig, delta: f32) -> f32 {
 
 
 impl CarState {
-    fn update(&self, input: &CarInput, dt: f32, config: &CarConfig) -> Self {
+    pub fn update(&self, input: &CarInput, dt: f32, config: &CarConfig) -> Self {
         // Current speed
         let speed = self.velocity.norm();
 
         // Get average speed over the time step
-        let avg_speed = speed + 0.5*dt*input.forward_acc;
-        let new_speed = speed + dt*input.forward_acc;
+        let avg_speed = (speed + 0.5*dt*input.forward_acc).max(0.001);
+        let new_speed = (speed + dt*input.forward_acc).max(0.001);
 
         // Determine the turning circle
         let signed_inv_radius = inv_turn_radius(config, input.steer_delta);
@@ -96,12 +111,6 @@ impl CarState {
     }
 }
 
-
-impl Default for CarState {
-    fn default() -> Self {
-        CarState { position: Vec2(0.0, 0.0), velocity: Vec2(0.001, 0.0) }
-    }
-}
 
 #[cfg(test)]
 mod tests {
