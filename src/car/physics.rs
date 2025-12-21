@@ -4,6 +4,8 @@ use crate::math_utils::Vec2;
 #[derive(Debug)]
 pub struct CarConfig {
     pub length: f32,
+    pub front_axle: f32,
+    pub back_axle: f32,
     pub max_delta: f32,
     pub acceleration: f32,
     pub brake_acceleration: f32
@@ -12,12 +14,19 @@ pub struct CarConfig {
 #[derive(Debug, Clone)]
 pub struct CarState {
     pub position: Vec2::<f32>,
-    pub velocity: Vec2::<f32>
+    pub unit_forward: Vec2::<f32>,
+    pub speed: f32,
+}
+
+impl Default for CarConfig {
+    fn default() -> Self {
+        Self { length: 3.0, front_axle: 0.5, back_axle: 2.5, max_delta: 0.5, acceleration: 6.0, brake_acceleration: 8.0 }
+    }
 }
 
 impl Default for CarState {
     fn default() -> Self { 
-        CarState {position: Vec2(0.0, 0.0), velocity: Vec2(8.0, 0.0) }
+        CarState {position: Vec2(0.0, 0.0), speed: 8.0, unit_forward: Vec2(1.0, 0.0) }
     }
 }
 
@@ -46,11 +55,11 @@ fn inv_turn_radius(config: &CarConfig, delta: f32) -> f32 {
 impl CarState {
     pub fn update(&self, input: &CarInput, dt: f32, config: &CarConfig) -> Self {
         // Current speed
-        let speed = self.velocity.norm();
+        let speed = self.speed;
 
         // Get average speed over the time step
-        let avg_speed = (speed + 0.5*dt*input.forward_acc).max(0.001);
-        let new_speed = (speed + dt*input.forward_acc).max(0.001);
+        let avg_speed = (speed + 0.5*dt*input.forward_acc).max(-2.0);
+        let new_speed = (speed + dt*input.forward_acc).max(-2.0);
 
         // Determine the turning circle
         let signed_inv_radius = inv_turn_radius(config, input.steer_delta);
@@ -59,8 +68,7 @@ impl CarState {
         let phi = signed_radians_traversed.abs();  // positive angle
 
         // Unit vectors
-        let e_forward = self.velocity * (1.0 / speed);
-        let e_left = e_forward.rotate90();
+        let e_left = self.unit_forward.rotate90();
 
         // Compute the new position
         //
@@ -100,14 +108,13 @@ impl CarState {
             };
 
             // Compute the vector displacement
-            self.position + e_forward*forward + e_left*left
+            self.position + self.unit_forward*forward + e_left*left
         };
 
         // Rotate the velocity vector according to the swept arc
-        let new_e_forward = e_forward.rotate(signed_radians_traversed);
-        let new_velocity = new_e_forward * new_speed;
+        let new_unit_forward = self.unit_forward.rotate(signed_radians_traversed);
 
-        CarState { position: new_position, velocity: new_velocity }
+        CarState { position: new_position, speed: new_speed, unit_forward: new_unit_forward }
     }
 }
 
@@ -118,8 +125,8 @@ mod tests {
 
     #[test]
     fn test_inertial() {
-        let config = CarConfig { length: 1.0 };
-        let initial_state = CarState { position: Vec2(0.0, 0.0), velocity: Vec2(1.0, 0.0) };
+        let config = CarConfig { length: 1.0, back_axle: 0.0, front_axle: 1.0, ..CarConfig::default() };
+        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 1.0, unit_forward: Vec2(1.0, 0.0) };
         let input = CarInput { forward_acc: 0.0, steer_delta: 0.0 };
 
         let mut state = initial_state.clone();
@@ -132,8 +139,8 @@ mod tests {
 
     #[test]
     fn test_circle() {
-        let config = CarConfig { length: 1.0 };
-        let initial_state = CarState { position: Vec2(0.0, 0.0), velocity: Vec2(1.0, 0.0) };
+        let config = CarConfig { length: 1.0, back_axle: 0.0, front_axle: 1.0, ..CarConfig::default() };
+        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 1.0, unit_forward: Vec2(1.0, 0.0) };
 
         // Deflect wheel 45 degrees
         // Turning radius is same as length = 1
@@ -152,14 +159,13 @@ mod tests {
 
         // New position after 90 degrees should be (1, 1), cince the center of the circle
         // is at (0, 1)
-        println!("position {:?}", state.position);
         assert!((state.position + Vec2(-1.0, -1.0)).norm() < 0.001);
     }
 
     #[test]
     fn test_acceleration() {
-        let config = CarConfig { length: 1.0 };
-        let initial_state = CarState { position: Vec2(0.0, 0.0), velocity: Vec2(0.0000001, 0.0) };
+        let config = CarConfig { length: 1.0, back_axle: 0.0, front_axle: 1.0, ..CarConfig::default() };
+        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 0.0000001, unit_forward: Vec2(1.0, 0.0) };
 
         // Accelerate with one unit of acceleration LT^{-2}
         let input = CarInput { forward_acc: 1.0, steer_delta: 0.0 };  
@@ -171,7 +177,7 @@ mod tests {
         }
 
         // Displacement should be 0.5*a*t^2 = 0.5; speed should be 1.0
-        assert!((state.velocity + Vec2(-1.0, 0.0)).norm() < 0.001);
+        assert!((state.speed - 1.0).abs() < 0.001);
         assert!((state.position + Vec2(-0.5, 0.0)).norm() < 0.001);
     }
 }
