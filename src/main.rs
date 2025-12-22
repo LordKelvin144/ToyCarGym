@@ -56,6 +56,10 @@ async fn main() {
             println!("Crashed: position={:?}", state.position)
         }
 
+        // Get LIDAR
+        let point = map.ray_intersect_edge(state.position, state.unit_forward);
+        // println!("Intersect point: {:?}", point);
+
         // Draw
         mq::clear_background(mq::Color{ r: 0.3, g: 0.8, b: 0.4, a: 0.5 });
         draw_map(&map);
