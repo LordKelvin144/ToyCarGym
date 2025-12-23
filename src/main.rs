@@ -2,6 +2,7 @@ mod env;
 mod walk;
 mod car;
 mod math_utils;
+mod data_utils;
 
 use walk::{Walk, RandomWalk, Square, Move};
 use env::{DeterministicEnv, RandomEnv};
