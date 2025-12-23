@@ -9,7 +9,7 @@ use env::{DeterministicEnv, RandomEnv};
 use car::physics::{CarState, CarInput, CarConfig};
 use car::game::{draw_car, draw_map,
     InputKeycodes, CarInputDynamics, BinaryInputDynamics, SlidingInputDynamics};
-use car::map::{CellMap};
+use car::map::{CellMap, LidarArray};
 use car::map;
 
 use macroquad::prelude as mq;
@@ -21,6 +21,9 @@ async fn main() {
 
     // Create the race map
     let map = CellMap::new(&map::FOLD, 10.0);
+
+    // Create a LiDAR array
+    let lidar_array = LidarArray::new(vec![30.0, 45.0, 60.0, 90.0]);
 
     // Set physical settings for car
     let config = CarConfig { 
@@ -57,8 +60,8 @@ async fn main() {
         }
 
         // Get LIDAR
-        let point = map.ray_intersect_edge(state.position, state.unit_forward);
-        // println!("Intersect point: {:?}", point);
+        let readings = map.read_lidar(&state, &lidar_array);
+        // println!("Lidar readings: {:?}", readings);
 
         // Draw
         mq::clear_background(mq::Color{ r: 0.3, g: 0.8, b: 0.4, a: 0.5 });

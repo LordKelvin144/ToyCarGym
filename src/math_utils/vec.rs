@@ -66,6 +66,15 @@ where
 
 impl<T> Vec2<T>
 where
+    T: Copy + Add<Output = T> + Mul<Output = T>,
+{
+    pub fn dot(self, rhs: Self) -> T {
+        self.0 * rhs.0 + self.1 * rhs.1
+    }
+}
+
+impl<T> Vec2<T>
+where
     T: Signed,
 {
     pub fn rotate90(self) -> Self {
@@ -123,6 +132,14 @@ mod tests {
         let sum = v1 + v2;
         assert_eq!(sum, Vec2(4, 7));
     }
+
+    #[test]
+    fn test_sub() {
+        let v1 = Vec2(4.0, 6.0);
+        let v2 = Vec2(1.0, 3.0);
+        assert_eq!(v1-v2, Vec2(3.0, 3.0));
+    }
+
     #[test]
     fn test_mul() {
         let v1 = Vec2(1.0, 2.0);
@@ -132,6 +149,20 @@ mod tests {
         let v1 = Vec2(1, 2);
         let rprod = v1*2;
         assert_eq!(rprod, Vec2(2, 4));
+    }
+
+    #[test]
+    fn test_div() {
+        let v1 = Vec2(2.0, 4.0);
+        assert_eq!(v1 / 2.0, Vec2(1.0, 2.0))
+    }
+
+    #[test]
+    fn test_dot() {
+        let v1 = Vec2(2.0, 4.0);
+        let v2 = Vec2(-1.0, 1.0);
+        assert_eq!(v1.dot(v2), 2.0);
+        assert_eq!(v2.dot(v1), 2.0);
     }
 
     #[test]

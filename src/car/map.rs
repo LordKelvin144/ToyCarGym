@@ -5,6 +5,32 @@ use itertools::Itertools;
 use super::physics::{CarState, CarConfig};
 
 
+// A struct for maintaining the angles of an array of LIDAR sensors
+pub struct LidarArray {
+    angles: Vec<f32>
+}
+
+
+impl LidarArray {
+    pub fn new(angles: Vec<f32>) -> Self {
+        let angles = angles.clone().into_iter().rev()
+            .chain(std::iter::once(0.0))
+            .chain(angles.into_iter())
+            .map(|angle| angle.to_radians())
+            .collect();
+        Self{ angles }
+    }
+
+    pub fn n_angles(&self) -> usize {
+        self.angles.len()
+    }
+
+    pub fn get_angles(&self) -> &[f32] {
+        &self.angles
+    }
+}
+
+
 #[derive(Hash, PartialEq, Eq, Debug, Copy, Clone)]
 pub struct Cell(pub i32, pub i32);
 
@@ -132,11 +158,21 @@ impl CellMap {
         }
     }
 
-    // Takes in a point and (non-normalized) direction defining a ray,
-    // and finds the first intersection with the edge of the track.
-    pub fn ray_intersect_edge(&self, point: Vec2::<f32>, direction: Vec2::<f32>) -> Vec2::<f32> {  
-        // TODO: Remove pub
-        //
+    pub fn read_lidar(&self, state: &CarState, lidar: &LidarArray) -> Vec<f32> {
+        lidar.get_angles()
+            .iter()
+            .map(|&angle| {
+                let direction = state.unit_forward.rotate(angle);
+                let intersection = self.ray_intersect_edge(state.position, direction);
+                // Get distance = projection along 'direction'
+                direction.dot(intersection-state.position)
+            })
+            .collect()
+    }
+
+    /// Takes in a point and (non-normalized) direction defining a ray,
+    /// and finds the first intersection with the edge of the track.
+    fn ray_intersect_edge(&self, point: Vec2::<f32>, direction: Vec2::<f32>) -> Vec2::<f32> {  
         // p + t*d = (x, n)
         // p.y + t*d.y = n
         // t = (n - p.y) / d.y  
