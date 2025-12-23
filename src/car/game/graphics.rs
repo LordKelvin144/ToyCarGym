@@ -1,12 +1,12 @@
 use macroquad::prelude as mq;
 
 use super::super::physics::{CarState, CarConfig, CarInput};
-use super::super::map::CellMap;
+use super::super::map::{CellMap, LidarArray};
 use crate::math_utils::Vec2;
 
 
 // Scale factor -> Bigger means simulation units look larger
-const SCALE: f32 = 7.0;
+const SCALE: f32 = 9.0;
 
 // Ratio width/length of car graphic
 const WIDTH_RATIO: f32 = 0.5;
@@ -89,6 +89,28 @@ pub fn draw_map(map: &CellMap) {
         mq::draw_triangle(mq::Vec2{ x: right, y: bottom },
                           mq::Vec2{ x: left, y: bottom },
                           mq::Vec2{ x: left, y: top }, mq::GRAY);
+    }
+}
+
+
+pub fn draw_lidar(state: &CarState, lidar: &LidarArray, readings: &[f32]) {
+    let (width, height) = (mq::screen_width(), mq::screen_height());
+
+    // Car position represents the position of the center of the back axle
+    // A physical coordinate of (0,0) should be at the center of the screen
+    let back_axle_center = Vec2(state.position.0*SCALE, -state.position.1*SCALE) + Vec2(width/2.0, height/2.0);
+
+    let unit_forward = Vec2(state.unit_forward.0, -state.unit_forward.1);
+
+    let points: Vec<Vec2::<f32>> = lidar.get_angles().into_iter().zip(readings)
+        .map(|(&angle, &reading)| {
+            let direction = unit_forward.rotate(-angle);
+            back_axle_center + direction*reading*SCALE
+        })
+        .collect();
+
+    for point in points.into_iter() {
+        mq::draw_line(back_axle_center.0, back_axle_center.1, point.0, point.1, 1.0, mq::Color{r: 0.6, g: 0.0, b: 0.0, a: 0.5});
     }
 }
 

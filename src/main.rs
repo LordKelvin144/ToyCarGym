@@ -7,8 +7,10 @@ use walk::{Walk, RandomWalk, Square, Move};
 use env::{DeterministicEnv, RandomEnv};
 
 use car::physics::{CarState, CarInput, CarConfig};
-use car::game::{draw_car, draw_map,
-    InputKeycodes, CarInputDynamics, BinaryInputDynamics, SlidingInputDynamics};
+use car::game::{
+    draw_car, draw_map, draw_lidar,
+    InputKeycodes, CarInputDynamics, BinaryInputDynamics, SlidingInputDynamics
+};
 use car::map::{CellMap, LidarArray};
 use car::map;
 
@@ -23,7 +25,8 @@ async fn main() {
     let map = CellMap::new(&map::FOLD, 10.0);
 
     // Create a LiDAR array
-    let lidar_array = LidarArray::new(vec![30.0, 45.0, 60.0, 90.0]);
+    let lidar_angles: Vec<f32> = (1 ..= 45).map(|angle| 4.0*(angle as f32)).collect();
+    let lidar_array = LidarArray::new(lidar_angles);
 
     // Set physical settings for car
     let config = CarConfig { 
@@ -39,6 +42,9 @@ async fn main() {
         0.7
     );
 
+    let mut do_draw_map = true;
+    let mut do_draw_lidar = true;
+
     // Intialize simulator state
     let mut state = CarState::default();
     let mut input = CarInput::default();
@@ -49,6 +55,12 @@ async fn main() {
 
         // Handle user input
         input = input_dynamics.update(&input, dt, &config);
+        if mq::is_key_pressed(KeyCode::Z) {
+            do_draw_lidar = !do_draw_lidar;
+        }
+        if mq::is_key_pressed(KeyCode::M) {
+            do_draw_map = !do_draw_map;
+        }
         
         // Run physics
         state = state.update(&input, dt, &config);
@@ -65,7 +77,8 @@ async fn main() {
 
         // Draw
         mq::clear_background(mq::Color{ r: 0.3, g: 0.8, b: 0.4, a: 0.5 });
-        draw_map(&map);
+        if do_draw_map { draw_map(&map); }
+        if do_draw_lidar { draw_lidar(&state, &lidar_array, &readings); }
         draw_car(&state, &input, &config);
 
         mq::next_frame().await

@@ -13,7 +13,7 @@ pub struct LidarArray {
 
 impl LidarArray {
     pub fn new(angles: Vec<f32>) -> Self {
-        let angles = angles.clone().into_iter().rev()
+        let angles = angles.clone().into_iter().rev().map(|angle| -angle)
             .chain(std::iter::once(0.0))
             .chain(angles.into_iter())
             .map(|angle| angle.to_radians())
