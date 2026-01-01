@@ -9,6 +9,9 @@ use car_rl::car::map;
 use macroquad::prelude as mq;
 use macroquad::prelude::{KeyCode};
 
+use car_rl::graphics_utils::{draw_bezier};
+use car_rl::math_utils::{Vec2, spline};
+
 
 #[macroquad::main("Car RL")]
 async fn main() {
@@ -72,6 +75,9 @@ async fn main() {
         if do_draw_map { draw_map(&map); }
         if do_draw_lidar { draw_lidar(&state, &lidar_array, &readings); }
         draw_car(&state, &input, &config);
+
+        let bezier = spline::CubicBezier::new(Vec2(100.0, 100.0), Vec2(150.0, 100.0), Vec2(150.0, 150.0), Vec2(100.0, 150.0));
+        draw_bezier(&bezier, 20, 5.0, mq::BLUE);
 
         mq::next_frame().await
     }
