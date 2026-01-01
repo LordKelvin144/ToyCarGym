@@ -1,4 +1,4 @@
-use std::ops::{Index, Range};
+use std::ops::{Index};
 use rand::prelude::*;
 
 

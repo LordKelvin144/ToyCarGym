@@ -1,19 +1,10 @@
-mod env;
-mod walk;
-mod car;
-mod math_utils;
-mod data_utils;
-
-use walk::{Walk, RandomWalk, Square, Move};
-use env::{DeterministicEnv, RandomEnv};
-
-use car::physics::{CarState, CarInput, CarConfig};
-use car::game::{
+use car_rl::car::physics::{CarState, CarInput, CarConfig};
+use car_rl::car::game::{
     draw_car, draw_map, draw_lidar,
-    InputKeycodes, CarInputDynamics, BinaryInputDynamics, SlidingInputDynamics
+    InputKeycodes, CarInputDynamics, SlidingInputDynamics
 };
-use car::map::{CellMap, LidarArray};
-use car::map;
+use car_rl::car::map::{CellMap, LidarArray};
+use car_rl::car::map;
 
 use macroquad::prelude as mq;
 use macroquad::prelude::{KeyCode};

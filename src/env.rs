@@ -1,21 +1,31 @@
 use rand::Rng;
+use rand::prelude::IndexedRandom;
+use std::clone::Clone;
+
 
 /// An environment
-pub trait Env<S,A> {
+pub trait Env<S, A: Clone> {
     fn possible_actions(&self, state: &S) -> Vec<A>;
     fn reward(&self, state: &S, action: &A, next_state: &S) -> f32;
     fn initial_state(&self) -> S;
+    fn random_action(&self, state: &S) -> A {
+        let mut rng = rand::rng();
+        self.possible_actions(state)
+             .choose(&mut rng)
+             .expect("at least one action to exist")
+             .clone()
+    }
 }
 
 /// An environment where the transition dynamics are deterministic.
 /// Requires a method for computing the next state, and a method for the reward.
-pub trait DeterministicEnv<S,A>: Env<S,A> {
+pub trait DeterministicEnv<S,A: Clone>: Env<S,A> {
     fn next_state(&self, state: &S, action: &A) -> S;
 }
 
 /// An environment where the transition dynamics are random.
 /// Provides a method for sampling the next state.
-pub trait RandomEnv<S,A>: Env<S,A> {
+pub trait RandomEnv<S,A: Clone>: Env<S,A> {
     /// Computes the possible next states and their respective probabilities
     fn transition(&self, state: &S, action: &A) -> Vec<(S, f32)>;
 

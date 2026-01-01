@@ -2,7 +2,7 @@ use crate::env::{Env, DeterministicEnv, RandomEnv};
 use std::fmt;
 
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Hash,PartialEq,Eq)]
 pub enum Move {
     Up,
     Down,
@@ -21,7 +21,7 @@ impl fmt::Display for Move {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,Hash,PartialEq,Eq)]
 pub struct Square(pub i32, pub i32);
 
 impl fmt::Display for Square {
@@ -43,7 +43,7 @@ impl Env<Square, Move> for Walk {
 
     fn reward(&self, _state: &Square, _action: &Move, next_state: &Square) -> f32 {
         match next_state {
-            Square(5,0) => 1.0,
+            Square(4,0) => 1.0,
             _ => 0.0,
         }
     }
@@ -92,8 +92,19 @@ impl Env<Square, Move> for RandomWalk {
     }
 
     fn reward(&self, _state: &Square, _action: &Move, next_state: &Square) -> f32 {
+        // Create a scenario that looks like
+        //   x x x
+        // w 0 0 0 s 0 0 0 w
+        //   x x x
         match next_state {
-            Square(5,0) => 1.0,
+            Square(1,-1) => -1.0,
+            Square(1,-2) => -1.0,
+            Square(1,-3) => -1.0,
+            Square(-1,-1) => -1.0,
+            Square(-1,-2) => -1.0,
+            Square(-1,-3) => -1.0,
+            Square(0,4) => 1.0,
+            Square(0,-4) => 1.0,
             _ => 0.0,
         }
     }
