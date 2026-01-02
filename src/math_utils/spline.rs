@@ -2,10 +2,9 @@ use super::vec::Vec2;
 use itertools::Itertools;
 
 use std::cell::OnceCell;
+use std::cmp::Ordering;
 
-
-// TODO: 
-//   - Given a point, find the closest point (or its parameter) on the spline
+use super::root::{find_min_differentiable};
 
 
 pub struct CubicBezier {
@@ -72,11 +71,25 @@ impl CubicBezier {
     // Computes the tangential arc length from t=0 to t=t
     pub fn arc_length(&self, t: f32) -> f32 {
         if t == 1.0 {
-            *self.arc_length.get_or_init(|| self._arc_length(0.0, 1.0, 64))
+            *self.arc_length.get_or_init(|| self._arc_length(0.0, 1.0, 32))
             
         } else {
-            self._arc_length(0.0, t, 64)
+            self._arc_length(0.0, t, 32)
         }
+    }
+
+    pub fn closest_point(&self, point: Vec2<f32>) -> f32 {
+        let f = |t| {
+            let pt = self.get(t);
+            (pt - point).dot(pt-point)
+        };
+
+        let fp = |t| {
+            let pt = self.get(t);
+            self.velocity(t).dot((pt - point).normalized())
+        };
+
+        find_min_differentiable(f, fp, 0.0, 1.0)
     }
 }
 
@@ -131,27 +144,63 @@ impl SmoothBezierSpline {
         // Arc length is prior length, plus the arc length on the active segment
         previous_length + active_segment.arc_length(t)
     }
+
+    pub fn closest_point(&self, point: Vec2<f32>) -> f32 {
+        let us = self.segments.iter().enumerate().map(|(i, segment)| i as f32 + segment.closest_point(point));
+
+        let distances = us.map(|u| {
+            let pu = self.get(u);
+            let d = (pu - point).dot(pu - point);
+            (u, d)
+        });
+        let (u, _d) = distances.fold(None, |accumulator, (u, d)| match accumulator {
+            None => Some((u, d)),
+            Some((up, dp)) => match dp.partial_cmp(&d).expect("distance to be finite") {
+                Ordering::Less | Ordering::Equal => Some((up, dp)),
+                Ordering::Greater => Some((u, d))
+            }
+        }).expect("at least one distance to exist");
+        u
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_limits() {
+    /// Common Bezier curve used in tests
+    fn setup_bezier() -> CubicBezier {
         let start = Vec2(-1.0, 0.0);
         let p1 = Vec2(-1.0, 1.0);
         let p2 = Vec2(1.0, 1.0);
         let end = Vec2(1.0, 0.0);
-        let spline = CubicBezier::new(start, p1, p2, end);
-        assert_eq!(spline.get(0.0), start);
-        assert_eq!(spline.get(1.0), end);
-        assert_eq!(spline.get(0.5).0, 0.0);  // Control point symmetric about x axis, so 0.5 should
+        CubicBezier::new(start, p1, p2, end)
+    }
+
+    /// Common Bezier spline used in tests
+    ///
+    /// S shaped
+    ///
+    /// x--x  x
+    /// |  |  |
+    /// x  x--x
+    fn setup_spline() -> SmoothBezierSpline {
+        SmoothBezierSpline::new(
+            vec![BezierControl{ point: Vec2(0.0, 0.0), velocity: Vec2(0.0, 1.0)},
+                 BezierControl{ point: Vec2(1.0, 0.0), velocity: Vec2(0.0, -1.0)},
+                 BezierControl{ point: Vec2(2.0, 0.0), velocity: Vec2(0.0, 1.0)}]
+        )
+    }
+
+    #[test]
+    fn test_limits() {
+        let bezier = setup_bezier();
+        assert_eq!(bezier.get(0.0), Vec2(-1.0, 0.0));
+        assert_eq!(bezier.get(1.0), Vec2(1.0, 0.0));
+        assert_eq!(bezier.get(0.5).0, 0.0);  // Control point symmetric about x axis, so 0.5 should
                                              // have x=0
 
-        let spline = SmoothBezierSpline::new(vec![BezierControl{ point: Vec2(0.0, 0.0), velocity: Vec2(0.0, 1.0)},
-                                                  BezierControl{ point: Vec2(1.0, 0.0), velocity: Vec2(0.0, -1.0)},
-                                                  BezierControl{ point: Vec2(2.0, 0.0), velocity: Vec2(0.0, 1.0)}]);
+        let spline = setup_spline(); 
         assert_eq!(spline.get(0.0), Vec2(0.0, 0.0));
         assert_eq!(spline.get(0.5).0, 0.5);
         assert_eq!(spline.get(1.0), Vec2(1.0, 0.0));
@@ -162,43 +211,32 @@ mod tests {
     fn test_velocity() {
         let t = 0.625;  // Arbitrary
 
-        let start = Vec2(-1.0, 0.0);
-        let p1 = Vec2(-1.0, 1.0);
-        let p2 = Vec2(1.0, 1.0);
-        let end = Vec2(1.0, 0.0);
-        let spline = CubicBezier::new(start, p1, p2, end);
+        let bezier = setup_bezier();
 
         // Check that velocity is consistent with finite difference approximation
         let epsilon = 0.00001;
-        let c = spline.get(t);
-        let cp = spline.get(t + epsilon);
+        let c = bezier.get(t);
+        let cp = bezier.get(t + epsilon);
 
         let v_fd = (cp - c) / epsilon;
-        let v = spline.velocity(t);
+        let v = bezier.velocity(t);
 
         let error = (v_fd - v).norm() / v.norm();
         assert!(error < 0.01);
 
-        assert_eq!(spline.velocity(0.0).0, 0.0);
-        assert_eq!(spline.velocity(1.0).0, 0.0);
-        assert_eq!(spline.velocity(0.5).1, 0.0);
+        assert_eq!(bezier.velocity(0.0).0, 0.0);
+        assert_eq!(bezier.velocity(1.0).0, 0.0);
+        assert_eq!(bezier.velocity(0.5).1, 0.0);
     }
 
     #[test]
     fn test_tangent() {
-        let start = Vec2(-1.0, 0.0);
-        let p1 = Vec2(-1.0, 1.0);
-        let p2 = Vec2(1.0, 1.0);
-        let end = Vec2(1.0, 0.0);
-        let spline = CubicBezier::new(start, p1, p2, end);
+        let bezier = setup_bezier();
+        assert_eq!(bezier.tangent(0.0), Vec2(0.0, 1.0));
+        assert_eq!(bezier.tangent(0.5), Vec2(1.0, 0.0));
+        assert_eq!(bezier.tangent(1.0), Vec2(0.0, -1.0));
 
-        assert_eq!(spline.tangent(0.0), Vec2(0.0, 1.0));
-        assert_eq!(spline.tangent(0.5), Vec2(1.0, 0.0));
-        assert_eq!(spline.tangent(1.0), Vec2(0.0, -1.0));
-
-        let spline = SmoothBezierSpline::new(vec![BezierControl{ point: Vec2(0.0, 0.0), velocity: Vec2(0.0, 1.0)},
-                                                  BezierControl{ point: Vec2(1.0, 0.0), velocity: Vec2(0.0, -1.0)},
-                                                  BezierControl{ point: Vec2(2.0, 0.0), velocity: Vec2(0.0, 1.0)}]);
+        let spline = setup_spline();
         assert_eq!(spline.tangent(0.0), Vec2(0.0, 1.0));
         assert_eq!(spline.tangent(0.5), Vec2(1.0, 0.0));
         assert_eq!(spline.tangent(1.0), Vec2(0.0, -1.0));
@@ -224,6 +262,19 @@ mod tests {
         assert!(spline.arc_length(1.0 / 3.0) > 4.99);
         assert!(spline.arc_length(1.0 / 3.0) < 5.01);
         assert_eq!(spline.arc_length(1.0 + 1.0 / 3.0), 20.0);
+    }
+
+    #[test]
+    fn test_closest() {
+        let bezier = setup_bezier();
+        assert_eq!(bezier.closest_point(Vec2(-1.0, -5.0)), 0.0);
+        assert_eq!(bezier.closest_point(Vec2(0.0, 7.0)), 0.5);
+
+        let spline = setup_spline();
+        assert_eq!(spline.closest_point(Vec2(-3.0, -7.0)), 0.0);
+        assert_eq!(spline.closest_point(Vec2(0.5, 5.0)), 0.5);
+        assert_eq!(spline.closest_point(Vec2(1.5, -5.0)), 1.5);
+        assert_eq!(spline.closest_point(Vec2(5.0, 7.0)), 2.0);
     }
 }
 
