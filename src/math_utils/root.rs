@@ -14,7 +14,6 @@ enum IntervalParity {
 
 pub struct FunctionObservation { x: f32, value: f32, sign: Sign }
 
-
 struct OpenInterval { left: FunctionObservation, right: FunctionObservation, parity: IntervalParity }
 
 enum BisectionUpdate { 
@@ -99,7 +98,7 @@ where
 }
 
 
-pub fn find_min_differentiable<F>(fp: F, x_min: f32, x_max: f32) -> Option<f32>
+pub fn find_local_min_differentiable<F>(fp: F, x_min: f32, x_max: f32) -> Option<f32>
 where
     F: Fn(f32) -> f32,
 {
@@ -113,6 +112,51 @@ where
     // The derivative will have a root with negative derivative to the left and positive derivative
     // to the right. The root found will constitute a local minimum
     find_root(fp, x_min, x_max)
+}
+
+
+pub fn find_min_differentiable<F,G>(f: F, fp: G, x_min: f32, x_max: f32) -> f32
+where
+    F: Fn(f32) -> f32,
+    G: Fn(f32) -> f32,
+{
+        let steps = 32;
+
+        // Select a uniform grid of points and compute the value at each
+        let dx = (x_max-x_min) / steps as f32;
+        let values: Vec<f32> = (0 ..= steps).map(|i| f(x_min + i as f32 * dx)).collect();
+
+        // Get the minimizing sample point
+        let (i, i_value) = values.iter().enumerate()
+            .fold(None, |accumulator, (i, v)| {  // We fold such that we track the distance and
+                                                 // index of the smallest distance
+                match accumulator {
+                    None => Some((i, v)),
+                    Some((i_other, v_other)) => match v.partial_cmp(&v_other) {
+                        None => panic!("Comparison should always work"),
+                        Some(Ordering::Equal) => Some((i, v)),
+                        Some(Ordering::Less) => Some((i,v)),
+                        Some(Ordering::Greater) => Some((i_other, v_other)),
+                    }
+                }
+            })
+            .expect("values to have at least one element");
+        let xi = x_min + i as f32 * dx;
+
+        // Do derivative-based extremum finding around the approximate input
+        let x_left = (xi-dx).max(x_min);
+        let x_right = (xi+dx).min(x_max);
+
+        if let Some(x_lm) = find_local_min_differentiable(fp, x_left, x_right) {
+            let value_lm = f(x_lm);
+            match value_lm.partial_cmp(i_value).expect("input x to be finite") {
+                Ordering::Less => x_lm,
+                Ordering::Greater => xi,
+                Ordering::Equal => xi
+            } 
+        } else {
+            xi
+        }
 }
 
 #[cfg(test)]
@@ -131,12 +175,37 @@ mod tests {
     #[test]
     fn test_min() {
         // Find minimum of cos(x)
+        let f = |x: f32| x.cos();
         let fp = |x: f32| -x.sin();
 
-        let extremum = find_min_differentiable(fp, 3.0, 3.5);
-        assert_eq!(extremum, Some(3.14159265358979));
-        let extremum = find_min_differentiable(fp, -1.0, 1.0);
-        assert_eq!(extremum, None);
+        // Case when global minimum is local minimum inside the range
+        let extremum = find_min_differentiable(f, fp, 3.0, 3.5);
+        assert_eq!(extremum, 3.14159265358979);
+
+        // Case when global minimum is boundary value
+        let extremum = find_min_differentiable(f, fp, 0.5, 1.0);
+        assert_eq!(extremum, 1.0);
+
+
+        // Find minimum of x**2, check case when global minimum is a local minimum *at* boundary
+        let f = |x: f32| x*x;
+        let fp = |x: f32| 2.0*x;
+
+        let extremum = find_min_differentiable(f, fp, -1.0, 0.0);
+        assert_eq!(extremum, 0.0);
+
+        // Find minimum of x³-x; check case when function has a local minimum, but global minimum
+        // is at boundary
+        let f = |x: f32| x*x*x - x;
+        let fp = |x: f32| 3.0*x*x - 1.0;
+
+        let extremum = find_min_differentiable(f, fp, -2.0, 2.0);
+        assert_eq!(extremum, -2.0);
+
+        // Restricting the domain, the global minimum is a local minimum at roughly 0.577
+        let extremum = find_min_differentiable(f, fp, -1.0, 1.0);
+        assert!(extremum < 0.58);
+        assert!(extremum > 0.57);
     }
 
 }
