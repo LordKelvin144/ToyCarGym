@@ -98,6 +98,23 @@ where
     Some(interval.left.x - interval.left.value * k)
 }
 
+
+pub fn find_min_differentiable<F>(fp: F, x_min: f32, x_max: f32) -> Option<f32>
+where
+    F: Fn(f32) -> f32,
+{
+    // Evaluate the derivative at the start and end points
+    let d_start = fp(x_min);
+    let d_end = fp(x_max);
+    if d_start > 0.0 || d_end < 0.0 {
+        return None  // The passed arguments can only guarantee a local maximum
+    } 
+
+    // The derivative will have a root with negative derivative to the left and positive derivative
+    // to the right. The root found will constitute a local minimum
+    find_root(fp, x_min, x_max)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,6 +126,17 @@ mod tests {
 
         assert_eq!(find_root(f, 1.0, 4.0), Some(3.0));  // Will be found at an exact bisection
         assert_eq!(find_root(f, 0.0, 3.1415926535), Some(3.0));
+    }
+
+    #[test]
+    fn test_min() {
+        // Find minimum of cos(x)
+        let fp = |x: f32| -x.sin();
+
+        let extremum = find_min_differentiable(fp, 3.0, 3.5);
+        assert_eq!(extremum, Some(3.14159265358979));
+        let extremum = find_min_differentiable(fp, -1.0, 1.0);
+        assert_eq!(extremum, None);
     }
 
 }
