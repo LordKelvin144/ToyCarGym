@@ -2,84 +2,12 @@ use std::collections::HashMap;
 use crate::math_utils::Vec2;
 use itertools::Itertools;
 
-use super::physics::{CarState, CarConfig};
-
-
-// A struct for maintaining the angles of an array of LIDAR sensors
-pub struct LidarArray {
-    angles: Vec<f32>
-}
-
-
-impl LidarArray {
-    pub fn new(angles: Vec<f32>) -> Self {
-        let angles = angles.clone().into_iter().rev().map(|angle| -angle)
-            .chain(std::iter::once(0.0))
-            .chain(angles.into_iter())
-            .map(|angle| angle.to_radians())
-            .collect();
-        Self{ angles }
-    }
-
-    pub fn n_angles(&self) -> usize {
-        self.angles.len()
-    }
-
-    pub fn get_angles(&self) -> &[f32] {
-        &self.angles
-    }
-}
+use crate::car::physics::{CarState, CarConfig};
+use super::lidar::{LidarArray, LidarDistance};
 
 
 #[derive(Hash, PartialEq, Eq, Debug, Copy, Clone)]
 pub struct Cell(pub i32, pub i32);
-
-
-#[derive(Debug, Clone)]
-enum LidarDistance {
-    Specific(f32),
-    Far
-}
-
-impl Ord for LidarDistance {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (self, other) {
-            (Self::Far, Self::Far) => panic!("Cannot compar two instances of 'far'"),
-            (Self::Specific(_), Self::Far) => std::cmp::Ordering::Less,
-            (Self::Far, Self::Specific(_)) => std::cmp::Ordering::Greater,
-            (Self::Specific(t1), Self::Specific(t2)) => {
-                assert!(t1.is_finite());
-                assert!(t2.is_finite());
-                if t1 < t2 { 
-                    std::cmp::Ordering::Less 
-                } else if t1 > t2 { 
-                    std::cmp::Ordering::Greater
-                } else if t1 == t2 {
-                    std::cmp::Ordering::Equal
-                } else {panic!("Unexpected logic branch");}
-            }
-
-        }
-    }
-}
-
-impl PartialOrd for LidarDistance {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-
-impl PartialEq for LidarDistance {
-    fn eq(&self, other: &Self) -> bool {
-        match self.cmp(other) {
-            std::cmp::Ordering::Equal => true,
-            _ => false
-        }
-    }
-}
-
-impl Eq for LidarDistance {}
 
 
 pub struct CellMap {
@@ -273,8 +201,4 @@ impl CellMap {
         }
     }
 }
-
-
-pub static CIRCUIT: [Cell; 8] = [Cell(0,0), Cell(1,0), Cell(2,0), Cell(2,1), Cell(2,2), Cell(1,2), Cell(0,2), Cell(0,1)];
-pub static FOLD: [Cell; 8] = [Cell(0,0), Cell(1,0), Cell(2,0), Cell(2,1), Cell(1,1), Cell(1,2), Cell(0,2), Cell(0,1)];
 
