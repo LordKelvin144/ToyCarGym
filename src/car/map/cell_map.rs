@@ -3,7 +3,8 @@ use crate::math_utils::Vec2;
 use itertools::Itertools;
 
 use crate::car::physics::{CarState, CarConfig};
-use super::lidar::{LidarArray, LidarDistance};
+use super::lidar::{LidarDistance};
+use super::traits::Road;
 
 
 #[derive(Hash, PartialEq, Eq, Debug, Copy, Clone)]
@@ -45,11 +46,6 @@ impl CellMap {
         self.idx_map.get(&cell).copied()
     }
 
-    pub fn is_crashed(&self, state: &CarState, config: &CarConfig) -> bool {
-        let back_point = state.position - state.unit_forward*config.back_axle;
-        let front_point = back_point + state.unit_forward*config.length;
-        return !self.step_is_along(back_point, front_point)
-    }
 
     fn step_is_along(&self, p1: Vec2::<f32>, p2: Vec2::<f32>) -> bool {
         let c1 = self.cell(p1);
@@ -85,22 +81,18 @@ impl CellMap {
             false
         }
     }
+}
 
-    pub fn read_lidar(&self, state: &CarState, lidar: &LidarArray) -> Vec<f32> {
-        lidar.get_angles()
-            .iter()
-            .map(|&angle| {
-                let direction = state.unit_forward.rotate(angle);
-                let intersection = self.ray_intersect_edge(state.position, direction);
-                // Get distance = projection along 'direction'
-                direction.dot(intersection-state.position)
-            })
-            .collect()
+impl Road for CellMap {
+    fn is_crashed(&self, state: &CarState, config: &CarConfig) -> bool {
+        let back_point = state.position - state.unit_forward*config.back_axle;
+        let front_point = back_point + state.unit_forward*config.length;
+        return !self.step_is_along(back_point, front_point)
     }
 
     /// Takes in a point and (non-normalized) direction defining a ray,
     /// and finds the first intersection with the edge of the track.
-    fn ray_intersect_edge(&self, point: Vec2::<f32>, direction: Vec2::<f32>) -> Vec2::<f32> {  
+    fn ray_collision(&self, point: Vec2::<f32>, direction: Vec2::<f32>) -> Vec2::<f32> {  
         // p + t*d = (x, n)
         // p.y + t*d.y = n
         // t = (n - p.y) / d.y  

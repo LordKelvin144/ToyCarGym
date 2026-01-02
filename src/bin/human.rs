@@ -3,7 +3,7 @@ use car_rl::car::game::{
     draw_car, draw_map, draw_lidar,
     InputKeycodes, CarInputDynamics, SlidingInputDynamics
 };
-use car_rl::car::map::{CellMap, LidarArray};
+use car_rl::car::map::{CellMap, LidarArray, Road};
 use car_rl::car::map;
 
 use macroquad::prelude as mq;

@@ -1,5 +1,5 @@
 use super::physics::{CarState, CarInput};
-use super::map::{CellMap, LidarArray};
+use super::map::{CellMap, LidarArray, Road};
 
 
 #[derive(Debug)]
