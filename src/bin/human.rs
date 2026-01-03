@@ -9,12 +9,14 @@ use car_rl::car::map;
 use macroquad::prelude as mq;
 use macroquad::prelude::{KeyCode};
 
-use car_rl::graphics_utils::{draw_bezier};
-use car_rl::math_utils::{Vec2, spline};
+use car_rl::graphics_utils::{ScreenTransform};
 
 
 #[macroquad::main("Car RL")]
 async fn main() {
+
+    // Create an object tracking coordinate transformations for drawing
+    let mut transform = ScreenTransform::new(10.0);
 
     // Create the race map
     let map = CellMap::new(&map::FOLD, 10.0);
@@ -68,16 +70,14 @@ async fn main() {
 
         // Get LIDAR
         let readings = map.read_lidar(&state, &lidar_array);
-        // println!("Lidar readings: {:?}", readings);
 
         // Draw
-        mq::clear_background(mq::Color{ r: 0.3, g: 0.8, b: 0.4, a: 0.5 });
-        if do_draw_map { draw_map(&map); }
-        if do_draw_lidar { draw_lidar(&state, &lidar_array, &readings); }
-        draw_car(&state, &input, &config);
+        transform.set_center(state.position);
 
-        let bezier = spline::CubicBezier::new(Vec2(100.0, 100.0), Vec2(150.0, 100.0), Vec2(150.0, 150.0), Vec2(100.0, 150.0));
-        draw_bezier(&bezier, 20, 5.0, mq::BLUE);
+        mq::clear_background(mq::Color{ r: 0.3, g: 0.8, b: 0.4, a: 0.5 });
+        if do_draw_map { draw_map(&map, &transform); }
+        if do_draw_lidar { draw_lidar(&state, &lidar_array, &readings, &transform); }
+        draw_car(&state, &input, &config, &transform);
 
         mq::next_frame().await
     }

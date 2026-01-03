@@ -3,10 +3,7 @@ use macroquad::prelude as mq;
 use super::super::physics::{CarState, CarConfig, CarInput};
 use super::super::map::{CellMap, LidarArray};
 use crate::math_utils::Vec2;
-
-
-// Scale factor -> Bigger means simulation units look larger
-const SCALE: f32 = 9.0;
+use crate::graphics_utils::ScreenTransform;
 
 // Ratio width/length of car graphic
 const WIDTH_RATIO: f32 = 0.5;
@@ -15,48 +12,49 @@ const WIDTH_RATIO: f32 = 0.5;
 const WHEEL_LENGTH: f32 = 0.2;
 
 
-pub fn draw_car(state: &CarState, input: &CarInput, config: &CarConfig) {
-    let (width, height) = (mq::screen_width(), mq::screen_height());
-
+pub fn draw_car(state: &CarState, input: &CarInput, config: &CarConfig, transform: &ScreenTransform) {
     // Car position represents the position of the center of the back axle
     // A physical coordinate of (0,0) should be at the center of the screen
-    let back_axle_center = Vec2(state.position.0*SCALE, -state.position.1*SCALE) + Vec2(width/2.0, height/2.0);
 
-    let unit_forward = Vec2(state.unit_forward.0, -state.unit_forward.1);
-    let unit_left = -unit_forward.rotate90();
+    let back_axle_center = state.position;
+    let back_center = state.position - state.unit_forward * config.back_axle;
+    let unit_left = state.unit_forward.rotate90();
+    let half_lateral_displacement = unit_left*0.5*config.length*WIDTH_RATIO;
+    let forward_displacement = state.unit_forward*config.length;
 
-    let width = config.length * WIDTH_RATIO;
+    // Get positions of car corners
+    let bl_corner = back_center + half_lateral_displacement;
+    let br_corner = back_center - half_lateral_displacement;
+    let fl_corner = bl_corner + forward_displacement;
+    let fr_corner = br_corner + forward_displacement;
 
-    let left_half_width = unit_left * 0.5*width*SCALE;
+    // Get wheel positions
+    let bl_wheel = back_axle_center + half_lateral_displacement*1.1;
+    let br_wheel = back_axle_center - half_lateral_displacement*1.1;
+    let front_wheel_to_back_wheel = state.unit_forward*(config.front_axle-config.back_axle);
+    let fl_wheel = bl_wheel + front_wheel_to_back_wheel;
+    let fr_wheel = br_wheel + front_wheel_to_back_wheel;
 
-    // Compute relevant positions
-    let back_center = back_axle_center - unit_forward * (config.back_axle*SCALE);
+    let draw_wheel = |center: Vec2<f32>, angle: f32| {
+        let unit_wheel = state.unit_forward.rotate(angle);
+        let half_wheel = unit_wheel*0.5*WHEEL_LENGTH * config.length;
 
-    let bl_corner = back_center + left_half_width;
-    let br_corner = back_center - left_half_width;
-    let fl_corner = bl_corner + unit_forward * config.length * SCALE;
-    let fr_corner = br_corner + unit_forward * config.length * SCALE;
-
-    // Compute centers of wheels
-    let lb_wheel = back_axle_center + left_half_width*1.05;
-    let rb_wheel = back_axle_center - left_half_width*1.05;
-    let lf_wheel = lb_wheel + unit_forward * (config.front_axle - config.back_axle)*SCALE;
-    let rf_wheel = rb_wheel + unit_forward * (config.front_axle - config.back_axle)*SCALE;
-
-    let draw_wheel = |center: Vec2<_>, angle: f32| {
-        let unit_wheel = unit_forward.rotate(-angle);
-        let back_point = center - unit_wheel*0.5*WHEEL_LENGTH*config.length*SCALE;
-        let front_point = center + unit_wheel*0.5*WHEEL_LENGTH*config.length*SCALE;
-        mq::draw_line(back_point.0, back_point.1, front_point.0, front_point.1, 5.0, mq::BLACK);
+        let back_point = transform.to_screen(center - half_wheel);
+        let front_point = transform.to_screen(center + half_wheel);
+        mq::draw_line(back_point.x, back_point.y, front_point.x, front_point.y, 5.0, mq::BLACK);
     };
 
     // Draw the wheels
-    draw_wheel(lb_wheel, 0.0);
-    draw_wheel(rb_wheel, 0.0);
-    draw_wheel(lf_wheel, input.steer_delta);
-    draw_wheel(rf_wheel, input.steer_delta);
+    draw_wheel(bl_wheel, 0.0);
+    draw_wheel(br_wheel, 0.0);
+    draw_wheel(fl_wheel, input.steer_delta);
+    draw_wheel(fr_wheel, input.steer_delta);
 
     // Draw the car
+    let bl_corner = transform.to_screen(bl_corner);
+    let br_corner = transform.to_screen(br_corner);
+    let fl_corner = transform.to_screen(fl_corner);
+    let fr_corner = transform.to_screen(fr_corner);
     mq::draw_triangle(bl_corner.into(),
                       fl_corner.into(),
                       fr_corner.into(), mq::BLUE);
@@ -64,53 +62,48 @@ pub fn draw_car(state: &CarState, input: &CarInput, config: &CarConfig) {
                       br_corner.into(),
                       bl_corner.into(), mq::BLUE);
 
-    mq::draw_line(bl_corner.0, bl_corner.1, fl_corner.0, fl_corner.1, 3.0, mq::RED);
-    mq::draw_line(fl_corner.0, fl_corner.1, fr_corner.0, fr_corner.1, 3.0, mq::GREEN);
-    mq::draw_line(fr_corner.0, fr_corner.1, br_corner.0, br_corner.1, 3.0, mq::RED);
-    mq::draw_line(br_corner.0, br_corner.1, bl_corner.0, bl_corner.1, 3.0, mq::GREEN);
+    mq::draw_line(bl_corner.x, bl_corner.y, fl_corner.x, fl_corner.y, 3.0, mq::RED);
+    mq::draw_line(fl_corner.x, fl_corner.y, fr_corner.x, fr_corner.y, 3.0, mq::GREEN);
+    mq::draw_line(fr_corner.x, fr_corner.y, br_corner.x, br_corner.y, 3.0, mq::RED);
+    mq::draw_line(br_corner.x, br_corner.y, bl_corner.x, bl_corner.y, 3.0, mq::GREEN);
 }
 
 
-pub fn draw_map(map: &CellMap) {
-    let (width, height) = (mq::screen_width(), mq::screen_height());
-
+pub fn draw_map(map: &CellMap, transform: &ScreenTransform) {
     for i in 0 .. map.cells.len()-1 {
         let cell1 = map.cells[i];
         let cell2 = map.cells[i+1];
 
-        let left = (cell1.0.min(cell2.0) as f32 - 0.45) * map.cell_size * SCALE + 0.5*width;
-        let right = (cell1.0.max(cell2.0) as f32 + 0.45) * map.cell_size * SCALE + 0.5*width;
-        let bottom = (-cell1.1.min(cell2.1) as f32 + 0.45) * map.cell_size * SCALE + 0.5*height;
-        let top = (-cell1.1.max(cell2.1) as f32 - 0.45) * map.cell_size * SCALE + 0.5*height;
+        let left = cell1.0.min(cell2.0) as f32 - 0.45;
+        let right = cell1.0.max(cell2.0) as f32 + 0.45;
+        let bottom = cell1.1.min(cell2.1) as f32 - 0.45;
+        let top = cell1.1.max(cell2.1) as f32 + 0.45;
 
-        mq::draw_triangle(mq::Vec2{ x: left, y: top },
-                          mq::Vec2{ x: right, y: top },
-                          mq::Vec2{ x: right, y: bottom }, mq::GRAY);
-        mq::draw_triangle(mq::Vec2{ x: right, y: bottom },
-                          mq::Vec2{ x: left, y: bottom },
-                          mq::Vec2{ x: left, y: top }, mq::GRAY);
+        let top_left = transform.to_screen(Vec2(left, top)*map.cell_size);
+        let top_right = transform.to_screen(Vec2(right, top)*map.cell_size);
+        let bottom_left = transform.to_screen(Vec2(left, bottom)*map.cell_size);
+        let bottom_right = transform.to_screen(Vec2(right, bottom)*map.cell_size);
+
+        mq::draw_triangle(top_left, top_right, bottom_right, mq::GRAY);
+        mq::draw_triangle(bottom_right, bottom_left, top_left, mq::GRAY);
     }
 }
 
 
-pub fn draw_lidar(state: &CarState, lidar: &LidarArray, readings: &[f32]) {
-    let (width, height) = (mq::screen_width(), mq::screen_height());
-
+pub fn draw_lidar(state: &CarState, lidar: &LidarArray, readings: &[f32], transform: &ScreenTransform) {
     // Car position represents the position of the center of the back axle
     // A physical coordinate of (0,0) should be at the center of the screen
-    let back_axle_center = Vec2(state.position.0*SCALE, -state.position.1*SCALE) + Vec2(width/2.0, height/2.0);
+    let lidar_pos = state.position;
+    let lidar_pos_screen = transform.to_screen(state.position);
 
-    let unit_forward = Vec2(state.unit_forward.0, -state.unit_forward.1);
-
-    let points: Vec<Vec2::<f32>> = lidar.get_angles().into_iter().zip(readings)
+    let points = lidar.get_angles().into_iter().zip(readings)
         .map(|(&angle, &reading)| {
-            let direction = unit_forward.rotate(-angle);
-            back_axle_center + direction*reading*SCALE
-        })
-        .collect();
+            let direction = state.unit_forward.rotate(angle);
+            transform.to_screen(lidar_pos + direction*reading)
+        });
 
-    for point in points.into_iter() {
-        mq::draw_line(back_axle_center.0, back_axle_center.1, point.0, point.1, 1.0, mq::Color{r: 0.6, g: 0.0, b: 0.0, a: 0.5});
+    for point in points {
+        mq::draw_line(lidar_pos_screen.x, lidar_pos_screen.y, point.x, point.y, 1.0, mq::Color{r: 0.6, g: 0.0, b: 0.0, a: 0.5});
     }
 }
 
