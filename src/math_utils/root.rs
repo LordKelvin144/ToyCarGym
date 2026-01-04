@@ -12,7 +12,11 @@ enum IntervalParity {
     Falling
 }
 
-pub struct FunctionObservation { x: f32, value: f32, sign: Sign }
+pub struct FunctionObservation { 
+    pub x: f32, 
+    pub value: f32, 
+    sign: Sign 
+}
 
 struct OpenInterval { left: FunctionObservation, right: FunctionObservation, parity: IntervalParity }
 
@@ -115,7 +119,7 @@ where
 }
 
 
-pub fn find_min_differentiable<F,G>(f: F, fp: G, x_min: f32, x_max: f32) -> f32
+pub fn find_min_differentiable<F,G>(f: F, fp: G, x_min: f32, x_max: f32) -> FunctionObservation
 where
     F: Fn(f32) -> f32,
     G: Fn(f32) -> f32,
@@ -127,7 +131,7 @@ where
         let values: Vec<f32> = (0 ..= steps).map(|i| f(x_min + i as f32 * dx)).collect();
 
         // Get the minimizing sample point
-        let (i, i_value) = values.iter().enumerate()
+        let (i, value_i) = values.iter().enumerate()
             .fold(None, |accumulator, (i, v)| {  // We fold such that we track the distance and
                                                  // index of the smallest distance
                 match accumulator {
@@ -149,13 +153,13 @@ where
 
         if let Some(x_lm) = find_local_min_differentiable(fp, x_left, x_right) {
             let value_lm = f(x_lm);
-            match value_lm.partial_cmp(i_value).expect("input x to be finite") {
-                Ordering::Less => x_lm,
-                Ordering::Greater => xi,
-                Ordering::Equal => xi
+            match value_lm.partial_cmp(value_i).expect("input x to be finite") {
+                Ordering::Less => FunctionObservation::new(x_lm, value_lm),
+                Ordering::Greater => FunctionObservation::new(xi, *value_i),
+                Ordering::Equal => FunctionObservation::new(xi, *value_i),
             } 
         } else {
-            xi
+            FunctionObservation::new(xi, *value_i)
         }
 }
 
@@ -180,19 +184,20 @@ mod tests {
 
         // Case when global minimum is local minimum inside the range
         let extremum = find_min_differentiable(f, fp, 3.0, 3.5);
-        assert_eq!(extremum, 3.14159265358979);
+        assert_eq!(extremum.x, 3.14159265358979);
+        assert_eq!(extremum.value, -1.0);
 
         // Case when global minimum is boundary value
         let extremum = find_min_differentiable(f, fp, 0.5, 1.0);
-        assert_eq!(extremum, 1.0);
-
+        assert_eq!(extremum.x, 1.0);
 
         // Find minimum of x**2, check case when global minimum is a local minimum *at* boundary
         let f = |x: f32| x*x;
         let fp = |x: f32| 2.0*x;
 
         let extremum = find_min_differentiable(f, fp, -1.0, 0.0);
-        assert_eq!(extremum, 0.0);
+        assert_eq!(extremum.x, 0.0);
+        assert_eq!(extremum.value, 0.0);
 
         // Find minimum of x³-x; check case when function has a local minimum, but global minimum
         // is at boundary
@@ -200,12 +205,12 @@ mod tests {
         let fp = |x: f32| 3.0*x*x - 1.0;
 
         let extremum = find_min_differentiable(f, fp, -2.0, 2.0);
-        assert_eq!(extremum, -2.0);
+        assert_eq!(extremum.x, -2.0);
 
         // Restricting the domain, the global minimum is a local minimum at roughly 0.577
         let extremum = find_min_differentiable(f, fp, -1.0, 1.0);
-        assert!(extremum < 0.58);
-        assert!(extremum > 0.57);
+        assert!(extremum.x < 0.58);
+        assert!(extremum.x > 0.57);
     }
 
 }

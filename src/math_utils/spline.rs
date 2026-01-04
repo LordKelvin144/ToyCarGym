@@ -4,7 +4,7 @@ use itertools::Itertools;
 use std::cell::OnceCell;
 use std::cmp::Ordering;
 
-use super::root::{find_min_differentiable};
+use super::root::{FunctionObservation, find_min_differentiable};
 
 
 pub struct CubicBezier {
@@ -29,6 +29,12 @@ pub struct BezierControl {
 pub struct SmoothBezierSpline {
     pub segments: Vec<CubicBezier>,
     pub max_u: f32,
+}
+
+
+pub struct ClosestPointOutput {
+    pub parameter: f32,
+    pub distance_sq: f32
 }
 
 
@@ -78,7 +84,7 @@ impl CubicBezier {
         }
     }
 
-    pub fn closest_point(&self, point: Vec2<f32>) -> f32 {
+    pub fn closest_point(&self, point: Vec2<f32>) -> ClosestPointOutput {
         let f = |t| {
             let pt = self.get(t);
             (pt - point).dot(pt-point)
@@ -89,7 +95,8 @@ impl CubicBezier {
             self.velocity(t).dot((pt - point).normalized())
         };
 
-        find_min_differentiable(f, fp, 0.0, 1.0)
+        let FunctionObservation { x: t, value: distance_sq, ..} = find_min_differentiable(f, fp, 0.0, 1.0);
+        ClosestPointOutput { parameter: t, distance_sq }
     }
 }
 
@@ -145,22 +152,26 @@ impl SmoothBezierSpline {
         previous_length + active_segment.arc_length(t)
     }
 
-    pub fn closest_point(&self, point: Vec2<f32>) -> f32 {
-        let us = self.segments.iter().enumerate().map(|(i, segment)| i as f32 + segment.closest_point(point));
+    pub fn closest_point(&self, point: Vec2<f32>) -> ClosestPointOutput {
+        let points = self.segments
+            .iter()
+            .enumerate()
+            .map(|(i, segment)| {
+                let point_output = segment.closest_point(point);
+                ClosestPointOutput { 
+                    parameter: i as f32 + point_output.parameter,
+                    distance_sq: point_output.distance_sq
+                }
+            });
 
-        let distances = us.map(|u| {
-            let pu = self.get(u);
-            let d = (pu - point).dot(pu - point);
-            (u, d)
-        });
-        let (u, _d) = distances.fold(None, |accumulator, (u, d)| match accumulator {
-            None => Some((u, d)),
-            Some((up, dp)) => match dp.partial_cmp(&d).expect("distance to be finite") {
-                Ordering::Less | Ordering::Equal => Some((up, dp)),
-                Ordering::Greater => Some((u, d))
+        let output = points.fold(None, |accumulator, point| match accumulator {
+            None => Some(point),
+            Some(point_p) => match point_p.distance_sq.partial_cmp(&point.distance_sq).expect("distance to be finite") {
+                Ordering::Less | Ordering::Equal => Some(point_p),
+                Ordering::Greater => Some(point)
             }
         }).expect("at least one distance to exist");
-        u
+        output
     }
 }
 
@@ -267,14 +278,16 @@ mod tests {
     #[test]
     fn test_closest() {
         let bezier = setup_bezier();
-        assert_eq!(bezier.closest_point(Vec2(-1.0, -5.0)), 0.0);
-        assert_eq!(bezier.closest_point(Vec2(0.0, 7.0)), 0.5);
+        assert_eq!(bezier.closest_point(Vec2(-1.0, -5.0)).parameter, 0.0);
+        assert_eq!(bezier.closest_point(Vec2(0.0, 7.0)).parameter, 0.5);
+        assert_eq!(bezier.closest_point(Vec2(-2.0, 0.0)).distance_sq, 1.0);
 
         let spline = setup_spline();
-        assert_eq!(spline.closest_point(Vec2(-3.0, -7.0)), 0.0);
-        assert_eq!(spline.closest_point(Vec2(0.5, 5.0)), 0.5);
-        assert_eq!(spline.closest_point(Vec2(1.5, -5.0)), 1.5);
-        assert_eq!(spline.closest_point(Vec2(5.0, 7.0)), 2.0);
+        assert_eq!(spline.closest_point(Vec2(-3.0, -7.0)).parameter, 0.0);
+        assert_eq!(spline.closest_point(Vec2(0.5, 5.0)).parameter, 0.5);
+        assert_eq!(spline.closest_point(Vec2(1.5, -5.0)).parameter, 1.5);
+        assert_eq!(spline.closest_point(Vec2(5.0, 7.0)).parameter, 2.0);
+        assert_eq!(spline.closest_point(Vec2(-4.0, -3.0)).distance_sq, 25.0);
     }
 }
 
