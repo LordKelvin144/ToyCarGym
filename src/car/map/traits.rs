@@ -2,6 +2,8 @@ use crate::car::physics::{CarState, CarConfig};
 use super::lidar::LidarArray;
 use crate::math_utils::Vec2;
 
+use crate::graphics_utils::ScreenTransform;
+
 
 pub trait Road {
     fn is_crashed(&self, state: &CarState, config: &CarConfig) -> bool;
@@ -17,5 +19,11 @@ pub trait Road {
             })
             .collect()
     }
+}
+
+
+/// A trait for Road implentations that can be drawn to screen
+pub trait DrawRoad: Road {
+    fn draw_road(&self, transform: &ScreenTransform);
 }
 

@@ -76,3 +76,11 @@ pub fn draw_bezier(curve: &spline::CubicBezier, transform: &ScreenTransform, wor
         t += dt;
     }
 }
+
+
+pub fn draw_spline(spline: &spline::SmoothBezierSpline, transform: &ScreenTransform, world_width: f32, segments: usize, color: mq::Color) {
+    let sub_segments = segments / spline.segments.len() + 1;
+    for segment in &spline.segments {
+        draw_bezier(segment, transform, world_width, sub_segments, color);
+    };
+}

@@ -1,9 +1,9 @@
 use macroquad::prelude as mq;
 
 use super::super::physics::{CarState, CarConfig, CarInput};
-use super::super::map::{CellMap, LidarArray};
+use super::super::map::{CellMap, SplineMap, LidarArray, DrawRoad};
 use crate::math_utils::Vec2;
-use crate::graphics_utils::ScreenTransform;
+use crate::graphics_utils::{ScreenTransform, draw_spline};
 
 // Ratio width/length of car graphic
 const WIDTH_RATIO: f32 = 0.5;
@@ -69,23 +69,35 @@ pub fn draw_car(state: &CarState, input: &CarInput, config: &CarConfig, transfor
 }
 
 
-pub fn draw_map(map: &CellMap, transform: &ScreenTransform) {
-    for i in 0 .. map.cells.len()-1 {
-        let cell1 = map.cells[i];
-        let cell2 = map.cells[i+1];
+impl DrawRoad for CellMap {
+    fn draw_road(&self, transform: &ScreenTransform) {
+        for i in 0 .. &self.cells.len()-1 {
+            let cell1 = &self.cells[i];
+            let cell2 = &self.cells[i+1];
 
-        let left = cell1.0.min(cell2.0) as f32 - 0.45;
-        let right = cell1.0.max(cell2.0) as f32 + 0.45;
-        let bottom = cell1.1.min(cell2.1) as f32 - 0.45;
-        let top = cell1.1.max(cell2.1) as f32 + 0.45;
+            let left = cell1.0.min(cell2.0) as f32 - 0.45;
+            let right = cell1.0.max(cell2.0) as f32 + 0.45;
+            let bottom = cell1.1.min(cell2.1) as f32 - 0.45;
+            let top = cell1.1.max(cell2.1) as f32 + 0.45;
 
-        let top_left = transform.to_screen(Vec2(left, top)*map.cell_size);
-        let top_right = transform.to_screen(Vec2(right, top)*map.cell_size);
-        let bottom_left = transform.to_screen(Vec2(left, bottom)*map.cell_size);
-        let bottom_right = transform.to_screen(Vec2(right, bottom)*map.cell_size);
+            let top_left = transform.to_screen(Vec2(left, top)*self.cell_size);
+            let top_right = transform.to_screen(Vec2(right, top)*self.cell_size);
+            let bottom_left = transform.to_screen(Vec2(left, bottom)*self.cell_size);
+            let bottom_right = transform.to_screen(Vec2(right, bottom)*self.cell_size);
 
-        mq::draw_triangle(top_left, top_right, bottom_right, mq::GRAY);
-        mq::draw_triangle(bottom_right, bottom_left, top_left, mq::GRAY);
+            mq::draw_triangle(top_left, top_right, bottom_right, mq::GRAY);
+            mq::draw_triangle(bottom_right, bottom_left, top_left, mq::GRAY);
+        }
+    }
+}
+
+
+impl DrawRoad for SplineMap {
+    fn draw_road(&self, transform: &ScreenTransform) {
+        let segments = 64;
+        let color = mq::Color { r: 0.3, g: 0.3, b: 0.3, a: 1.0 };
+        draw_spline(&self.spline, transform, self.width, segments, color);
+        draw_spline(&self.spline, transform, 0.1, segments, mq::WHITE);
     }
 }
 

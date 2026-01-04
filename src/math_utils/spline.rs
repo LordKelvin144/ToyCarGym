@@ -1,7 +1,6 @@
 use super::vec::Vec2;
 use itertools::Itertools;
 
-use std::cell::OnceCell;
 use std::cmp::Ordering;
 
 use super::root::{FunctionObservation, find_min_differentiable};
@@ -15,7 +14,7 @@ pub struct CubicBezier {
     c1: Vec2<f32>,
     c2: Vec2<f32>,
     c3: Vec2<f32>,
-    arc_length: OnceCell<f32>,
+    arc_length: f32,
 }
 
 
@@ -46,11 +45,13 @@ impl CubicBezier {
         let c1 = (p1-start)*3.0;
         let c2 = start*3.0 - p1*6.0 + p2*3.0;
         let c3 = -start + p1*3.0 - p2*3.0 + end;
-        CubicBezier {
+        let mut this = CubicBezier {
             start, p1, p2, end,
             c1, c2, c3,
-            arc_length: OnceCell::new()
-        }
+            arc_length: 0.0
+        };
+        this.arc_length = this._arc_length(0.0, 1.0, 32);
+        this
     }
 
     pub fn get(&self, t: f32) -> Vec2<f32> {
@@ -77,7 +78,7 @@ impl CubicBezier {
     // Computes the tangential arc length from t=0 to t=t
     pub fn arc_length(&self, t: f32) -> f32 {
         if t == 1.0 {
-            *self.arc_length.get_or_init(|| self._arc_length(0.0, 1.0, 32))
+            self.arc_length
             
         } else {
             self._arc_length(0.0, t, 32)
