@@ -61,7 +61,7 @@ impl OpenInterval {
 }
 
 
-pub fn find_root<F>(f: F, x_min: f32, x_max: f32) -> Option<f32>
+pub fn find_root<F>(f: F, x_min: f32, x_max: f32, width_threshold: f32) -> Option<f32>
 where 
     F: Fn(f32)->f32,
 { 
@@ -78,7 +78,7 @@ where
     let mut interval = OpenInterval { left, right, parity };
     let mut iteration: usize = 0;
 
-    while interval.width() > 1e-3 && iteration < 100 {
+    while interval.width() > width_threshold && iteration < 20 {
         let midpoint_x = 0.5*(interval.left.x + interval.right.x);
         let observation = FunctionObservation::new(midpoint_x, f(midpoint_x));
         interval = match interval.update(observation) {
@@ -102,7 +102,7 @@ where
 }
 
 
-pub fn find_local_min_differentiable<F>(fp: F, x_min: f32, x_max: f32) -> Option<f32>
+pub fn find_local_min_differentiable<F>(fp: F, x_min: f32, x_max: f32, width_threshold: f32) -> Option<f32>
 where
     F: Fn(f32) -> f32,
 {
@@ -115,11 +115,11 @@ where
 
     // The derivative will have a root with negative derivative to the left and positive derivative
     // to the right. The root found will constitute a local minimum
-    find_root(fp, x_min, x_max)
+    find_root(fp, x_min, x_max, width_threshold)
 }
 
 
-pub fn find_min_differentiable<F,G>(f: F, fp: G, x_min: f32, x_max: f32) -> FunctionObservation
+pub fn find_min_differentiable<F,G>(f: F, fp: G, x_min: f32, x_max: f32, width_threshold: f32) -> FunctionObservation
 where
     F: Fn(f32) -> f32,
     G: Fn(f32) -> f32,
@@ -151,7 +151,7 @@ where
         let x_left = (xi-dx).max(x_min);
         let x_right = (xi+dx).min(x_max);
 
-        if let Some(x_lm) = find_local_min_differentiable(fp, x_left, x_right) {
+        if let Some(x_lm) = find_local_min_differentiable(fp, x_left, x_right, width_threshold) {
             let value_lm = f(x_lm);
             match value_lm.partial_cmp(value_i).expect("input x to be finite") {
                 Ordering::Less => FunctionObservation::new(x_lm, value_lm),
@@ -172,8 +172,8 @@ mod tests {
         // Find square root of 9
         let f = |x| x*x - 9.0;
 
-        assert_eq!(find_root(f, 1.0, 4.0), Some(3.0));  // Will be found at an exact bisection
-        assert_eq!(find_root(f, 0.0, 3.1415926535), Some(3.0));
+        assert_eq!(find_root(f, 1.0, 4.0, 1e-3), Some(3.0));  // Will be found at an exact bisection
+        assert_eq!(find_root(f, 0.0, 3.1415926535, 1e-3), Some(3.0));
     }
 
     #[test]
@@ -183,19 +183,19 @@ mod tests {
         let fp = |x: f32| -x.sin();
 
         // Case when global minimum is local minimum inside the range
-        let extremum = find_min_differentiable(f, fp, 3.0, 3.5);
+        let extremum = find_min_differentiable(f, fp, 3.0, 3.5, 1e-3);
         assert_eq!(extremum.x, 3.14159265358979);
         assert_eq!(extremum.value, -1.0);
 
         // Case when global minimum is boundary value
-        let extremum = find_min_differentiable(f, fp, 0.5, 1.0);
+        let extremum = find_min_differentiable(f, fp, 0.5, 1.0, 1e-3);
         assert_eq!(extremum.x, 1.0);
 
         // Find minimum of x**2, check case when global minimum is a local minimum *at* boundary
         let f = |x: f32| x*x;
         let fp = |x: f32| 2.0*x;
 
-        let extremum = find_min_differentiable(f, fp, -1.0, 0.0);
+        let extremum = find_min_differentiable(f, fp, -1.0, 0.0, 1e-3);
         assert_eq!(extremum.x, 0.0);
         assert_eq!(extremum.value, 0.0);
 
@@ -204,11 +204,11 @@ mod tests {
         let f = |x: f32| x*x*x - x;
         let fp = |x: f32| 3.0*x*x - 1.0;
 
-        let extremum = find_min_differentiable(f, fp, -2.0, 2.0);
+        let extremum = find_min_differentiable(f, fp, -2.0, 2.0, 1e-3);
         assert_eq!(extremum.x, -2.0);
 
         // Restricting the domain, the global minimum is a local minimum at roughly 0.577
-        let extremum = find_min_differentiable(f, fp, -1.0, 1.0);
+        let extremum = find_min_differentiable(f, fp, -1.0, 1.0, 1e-3);
         assert!(extremum.x < 0.58);
         assert!(extremum.x > 0.57);
     }

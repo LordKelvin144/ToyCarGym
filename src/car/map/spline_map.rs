@@ -62,7 +62,7 @@ impl Road for SplineMap {
         // Define a function f(t) such that f(t) is zero at t such that inside_point * t*step is on
         // the edge
         let edge_deviation = |t| self.spline.closest_point(inside_point + step*t).distance_sq - self.max_d2;
-        let t = find_root(edge_deviation, 0.0, 1.0).expect("the prior code to ensure a root exists");
+        let t = find_root(edge_deviation, 0.0, 1.0, 1e-2).expect("the prior code to ensure a root exists");
         inside_point + step*t
     }
 }

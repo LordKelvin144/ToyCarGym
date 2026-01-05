@@ -1,7 +1,7 @@
-use car_rl::car::physics::{CarState, CarInput, CarConfig};
+use car_rl::car::physics::{CarState, CarConfig};
 use car_rl::car::game::{
     draw_car, draw_lidar,
-    InputKeycodes, CarInputDynamics, SlidingInputDynamics
+    KeyboardInput, CarInputSource
 };
 use car_rl::car::map::{LidarArray, Road, DrawRoad};
 use car_rl::car::map;
@@ -22,7 +22,7 @@ async fn main() {
     let road = map::make_oval();
 
     // Create a LiDAR array
-    let lidar_angles: Vec<f32> = (1 ..= 22).map(|angle| 8.0*(angle as f32)).collect();
+    let lidar_angles = vec![1.0, 3.0, 5.0, 10.0, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0];
     let lidar_array = LidarArray::new(lidar_angles);
 
     // Set physical settings for car
@@ -34,24 +34,19 @@ async fn main() {
     };
 
     // Create an object for managing user input
-    let input_dynamics = SlidingInputDynamics::new(
-        InputKeycodes { left: KeyCode::Left, right: KeyCode::Right, accelerate: KeyCode::Up, brake: KeyCode::Down },
-        0.7
-    );
-
+    let keyboard_input = KeyboardInput::default();
     let mut do_draw_road = true;
     let mut do_draw_lidar = true;
 
     // Intialize simulator state
     let mut state = CarState::default();
-    let mut input = CarInput::default();
 
     loop {
 
         let dt = mq::get_frame_time();
 
         // Handle user input
-        input = input_dynamics.update(&input, dt, &config);
+        let input = keyboard_input.read(&config);
         if mq::is_key_pressed(KeyCode::Z) {
             do_draw_lidar = !do_draw_lidar;
         }
@@ -77,7 +72,7 @@ async fn main() {
         mq::clear_background(mq::Color{ r: 0.3, g: 0.8, b: 0.4, a: 0.5 });
         if do_draw_road { road.draw_road(&transform); }
         if do_draw_lidar { draw_lidar(&state, &lidar_array, &readings, &transform); }
-        draw_car(&state, &input, &config, &transform);
+        draw_car(&state, &config, &transform);
 
         mq::next_frame().await
     }

@@ -1,4 +1,4 @@
-use super::physics::{CarState, CarInput};
+use super::physics::{CarState};
 use super::map::{CellMap, LidarArray, Road};
 
 
@@ -57,7 +57,6 @@ impl Chunking {
 
 impl ChunkedLidarState {
     pub fn new(state: &CarState, 
-               input: &CarInput,
                map: &CellMap, 
                lidar_array: &LidarArray,
                chunking_config: &ChunkingConfig) -> Self {
@@ -69,7 +68,7 @@ impl ChunkedLidarState {
         Self { 
             lidar,
             speed: chunking_config.speed.get_chunk(state.speed),
-            turn: chunking_config.turn.get_chunk(input.steer_delta),
+            turn: chunking_config.turn.get_chunk(state.steer_delta),
         }
     }
 }

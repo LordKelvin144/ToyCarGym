@@ -96,7 +96,7 @@ impl CubicBezier {
             self.velocity(t).dot((pt - point).normalized())
         };
 
-        let FunctionObservation { x: t, value: distance_sq, ..} = find_min_differentiable(f, fp, 0.0, 1.0);
+        let FunctionObservation { x: t, value: distance_sq, ..} = find_min_differentiable(f, fp, 0.0, 1.0, 1e-2);
         ClosestPointOutput { parameter: t, distance_sq }
     }
 }

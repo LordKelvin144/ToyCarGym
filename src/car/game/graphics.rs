@@ -1,6 +1,6 @@
 use macroquad::prelude as mq;
 
-use super::super::physics::{CarState, CarConfig, CarInput};
+use super::super::physics::{CarState, CarConfig};
 use super::super::map::{CellMap, SplineMap, LidarArray, DrawRoad};
 use crate::math_utils::Vec2;
 use crate::graphics_utils::{ScreenTransform, draw_spline};
@@ -12,7 +12,7 @@ const WIDTH_RATIO: f32 = 0.5;
 const WHEEL_LENGTH: f32 = 0.2;
 
 
-pub fn draw_car(state: &CarState, input: &CarInput, config: &CarConfig, transform: &ScreenTransform) {
+pub fn draw_car(state: &CarState, config: &CarConfig, transform: &ScreenTransform) {
     // Car position represents the position of the center of the back axle
     // A physical coordinate of (0,0) should be at the center of the screen
 
@@ -47,8 +47,8 @@ pub fn draw_car(state: &CarState, input: &CarInput, config: &CarConfig, transfor
     // Draw the wheels
     draw_wheel(bl_wheel, 0.0);
     draw_wheel(br_wheel, 0.0);
-    draw_wheel(fl_wheel, input.steer_delta);
-    draw_wheel(fr_wheel, input.steer_delta);
+    draw_wheel(fl_wheel, state.steer_delta);
+    draw_wheel(fr_wheel, state.steer_delta);
 
     // Draw the car
     let bl_corner = transform.to_screen(bl_corner);

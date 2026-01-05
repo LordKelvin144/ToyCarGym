@@ -8,37 +8,43 @@ pub struct CarConfig {
     pub back_axle: f32,
     pub max_delta: f32,
     pub acceleration: f32,
-    pub brake_acceleration: f32
+    pub brake_acceleration: f32,
+    pub steer_speed: f32
 }
+
 
 #[derive(Debug, Clone)]
 pub struct CarState {
     pub position: Vec2::<f32>,
     pub unit_forward: Vec2::<f32>,
     pub speed: f32,
+    pub steer_delta: f32,
 }
+
 
 impl Default for CarConfig {
     fn default() -> Self {
-        Self { length: 3.0, front_axle: 0.5, back_axle: 2.5, max_delta: 0.5, acceleration: 6.0, brake_acceleration: 8.0 }
+        Self { length: 3.0, front_axle: 0.5, back_axle: 2.5, max_delta: 0.5, 
+            acceleration: 6.0, brake_acceleration: 8.0, steer_speed: 0.7 }
     }
 }
 
 impl Default for CarState {
     fn default() -> Self { 
-        CarState {position: Vec2(0.0, 0.0), speed: 8.0, unit_forward: Vec2(1.0, 0.0) }
+        CarState {position: Vec2(0.0, 0.0), speed: 8.0, unit_forward: Vec2(1.0, 0.0), steer_delta: 0.0 }
     }
 }
 
 #[derive(Debug)]
 pub struct CarInput {
     pub forward_acc: f32,
-    pub steer_delta: f32
+    pub target_delta: f32,
+    pub braking: bool,
 }
 
 impl Default for CarInput {
     fn default() -> Self {
-        CarInput { forward_acc: 0.0, steer_delta: 0.0 }
+        CarInput { forward_acc: 0.0, target_delta: 0.0, braking: false }
     }
 }
 
@@ -54,15 +60,30 @@ fn inv_turn_radius(config: &CarConfig, delta: f32) -> f32 {
 
 impl CarState {
     pub fn update(&self, input: &CarInput, dt: f32, config: &CarConfig) -> Self {
+        // Update the steering wheel
+        let steer_delta = Self::steer_update(self.steer_delta, input.target_delta, dt, config);
+
         // Current speed
         let speed = self.speed;
 
         // Get average speed over the time step
-        let avg_speed = (speed + 0.5*dt*input.forward_acc).max(-2.0);
-        let new_speed = (speed + dt*input.forward_acc).max(-2.0);
+        let dv = if input.braking { 
+            let brake_acc = -speed.signum() * config.brake_acceleration;
+            dt*(brake_acc + input.forward_acc)
+        } else {
+            dt*input.forward_acc
+        };
+        let avg_speed = {
+            let avg_speed = speed + 0.5*dv;
+            if avg_speed * speed > 0.0 { avg_speed } else { 0.0 }
+        };
+        let new_speed = {
+            let new_speed = speed + dv;
+            if new_speed > 0.0 { new_speed } else {0.0}
+        };
 
         // Determine the turning circle
-        let signed_inv_radius = inv_turn_radius(config, input.steer_delta);
+        let signed_inv_radius = inv_turn_radius(config, steer_delta);
         let arc = avg_speed * dt;
         let signed_radians_traversed = arc * signed_inv_radius;
         let phi = signed_radians_traversed.abs();  // positive angle
@@ -114,7 +135,20 @@ impl CarState {
         // Rotate the velocity vector according to the swept arc
         let new_unit_forward = self.unit_forward.rotate(signed_radians_traversed);
 
-        CarState { position: new_position, speed: new_speed, unit_forward: new_unit_forward }
+        Self { position: new_position, speed: new_speed, unit_forward: new_unit_forward, steer_delta }
+    }
+
+    fn steer_update(delta: f32, target_delta: f32, dt: f32, config: &CarConfig) -> f32 {
+        let direction = (target_delta - delta).signum();
+
+        let step = dt*direction*config.steer_speed;
+        let new_delta = delta + step;
+        if (target_delta-new_delta)*direction > 0.0 {
+            new_delta
+        } else {
+            target_delta  // Clip to target if update moves beyond it.
+        }
+        
     }
 }
 
@@ -126,8 +160,8 @@ mod tests {
     #[test]
     fn test_inertial() {
         let config = CarConfig { length: 1.0, back_axle: 0.0, front_axle: 1.0, ..CarConfig::default() };
-        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 1.0, unit_forward: Vec2(1.0, 0.0) };
-        let input = CarInput { forward_acc: 0.0, steer_delta: 0.0 };
+        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 1.0, unit_forward: Vec2(1.0, 0.0), steer_delta: 0.0 };
+        let input = CarInput { forward_acc: 0.0, target_delta: 0.0, braking: false };
 
         let mut state = initial_state.clone();
         let dt = 1.0/16.0;
@@ -140,11 +174,11 @@ mod tests {
     #[test]
     fn test_circle() {
         let config = CarConfig { length: 1.0, back_axle: 0.0, front_axle: 1.0, ..CarConfig::default() };
-        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 1.0, unit_forward: Vec2(1.0, 0.0) };
+        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 1.0, unit_forward: Vec2(1.0, 0.0), steer_delta: 45.0_f32.to_radians() };
 
         // Deflect wheel 45 degrees
         // Turning radius is same as length = 1
-        let input = CarInput { forward_acc: 0.0, steer_delta: 45.0_f32.to_radians() };  
+        let input = CarInput { forward_acc: 0.0, target_delta: 45.0_f32.to_radians(), braking: false };  
 
         // Check the center of rotation
         assert_eq!(inv_turn_radius(&config, 45.0_f32.to_radians()), 1.0);
@@ -165,10 +199,10 @@ mod tests {
     #[test]
     fn test_acceleration() {
         let config = CarConfig { length: 1.0, back_axle: 0.0, front_axle: 1.0, ..CarConfig::default() };
-        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 0.0000001, unit_forward: Vec2(1.0, 0.0) };
+        let initial_state = CarState { position: Vec2(0.0, 0.0), speed: 0.0000001, unit_forward: Vec2(1.0, 0.0), ..CarState::default() };
 
         // Accelerate with one unit of acceleration LT^{-2}
-        let input = CarInput { forward_acc: 1.0, steer_delta: 0.0 };  
+        let input = CarInput { forward_acc: 1.0, target_delta: 0.0, braking: false };  
 
         let mut state = initial_state.clone();
         let dt = 1.0 / 64.0;
