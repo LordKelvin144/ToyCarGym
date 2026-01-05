@@ -1,10 +1,10 @@
-use crate::math_utils::{
+use math_utils::{
     Vec2, 
     spline::{SmoothBezierSpline, ClosestPointOutput, BezierControl},
     root::find_root,
 };
 
-use crate::car::physics::{CarState, CarConfig};
+use crate::physics::{CarState, CarConfig};
 use super::traits::Road;
 
 pub struct SplineMap {

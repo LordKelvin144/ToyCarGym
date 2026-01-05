@@ -1,5 +1,6 @@
-use super::super::physics::{CarInput, CarConfig};
 use macroquad::prelude as mq;
+
+use car_sim::physics::{CarInput, CarConfig};
 
 
 pub struct InputKeycodes {

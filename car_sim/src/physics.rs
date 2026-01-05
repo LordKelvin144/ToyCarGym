@@ -1,4 +1,4 @@
-use crate::math_utils::Vec2;
+use math_utils::Vec2;
 
 
 #[derive(Debug)]

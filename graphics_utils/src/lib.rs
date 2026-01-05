@@ -1,6 +1,6 @@
 use macroquad::prelude as mq;
 
-use crate::math_utils::{Vec2, spline};
+use math_utils::{Vec2, spline};
 
 
 pub struct ScreenTransform {

@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use crate::math_utils::Vec2;
 use itertools::Itertools;
 
-use crate::car::physics::{CarState, CarConfig};
+use math_utils::Vec2;
+
+use crate::physics::{CarState, CarConfig};
 use super::lidar::{LidarDistance};
 use super::traits::Road;
 

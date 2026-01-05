@@ -1,3 +1,16 @@
+
+[workspace]
+members = [
+    "math_utils",
+    "data_utils",
+    "graphics_utils",
+    "car_sim",
+    "car_game",
+]
+
+resolver = "2"
+
+
 [package]
 name = "car_rl"
 version = "0.1.0"

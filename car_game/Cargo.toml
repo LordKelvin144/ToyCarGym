@@ -1,0 +1,11 @@
+[package]
+name = "car_game"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+graphics_utils = { path = "../graphics_utils" }
+math_utils = { path = "../math_utils" }
+car_sim = { path = "../car_sim" }
+macroquad = "0.4.14"
+

@@ -1,15 +1,21 @@
 use macroquad::prelude as mq;
 
-use super::super::physics::{CarState, CarConfig};
-use super::super::map::{CellMap, SplineMap, LidarArray, DrawRoad};
-use crate::math_utils::Vec2;
-use crate::graphics_utils::{ScreenTransform, draw_spline};
+use car_sim::physics::{CarState, CarConfig};
+use car_sim::map::{CellMap, SplineMap, LidarArray, Road};
+use math_utils::Vec2;
+use graphics_utils::{ScreenTransform, draw_spline};
 
 // Ratio width/length of car graphic
 const WIDTH_RATIO: f32 = 0.5;
 
 // Relative length of wheel to display
 const WHEEL_LENGTH: f32 = 0.2;
+
+
+/// A trait for Road implentations that can be drawn to screen
+pub trait DrawRoad: Road {
+    fn draw_road(&self, transform: &ScreenTransform);
+}
 
 
 pub fn draw_car(state: &CarState, config: &CarConfig, transform: &ScreenTransform) {

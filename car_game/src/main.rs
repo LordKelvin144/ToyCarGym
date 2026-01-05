@@ -1,15 +1,14 @@
-use car_rl::car::physics::{CarState, CarConfig};
-use car_rl::car::game::{
-    draw_car, draw_lidar,
-    KeyboardInput, CarInputSource
-};
-use car_rl::car::map::{LidarArray, Road, DrawRoad};
-use car_rl::car::map;
-
 use macroquad::prelude as mq;
 use macroquad::prelude::{KeyCode};
 
-use car_rl::graphics_utils::{ScreenTransform};
+use graphics_utils::{ScreenTransform};
+
+use car_sim::physics::{CarState, CarConfig};
+use car_sim::map::{LidarArray, Road};
+use car_sim::map;
+
+use car_game::graphics::{draw_car, draw_lidar, DrawRoad};
+use car_game::input::{KeyboardInput, CarInputSource};
 
 
 #[macroquad::main("Car RL")]

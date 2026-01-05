@@ -1,8 +1,6 @@
 use std::ops::{Add, Sub, Mul, Div, Neg};
 use num_traits::{Signed, Float};
 
-use macroquad::prelude as mq;
-
 
 #[derive(Clone,Copy,Debug,PartialEq)]
 pub struct Vec2<T>(pub T, pub T);
@@ -103,16 +101,6 @@ where T: Float + Signed,
         let cos = angle.cos();
         Vec2(self.0 * cos - self.1 * sin, self.0 * sin + self.1 * cos)
     }
-}
-
-
-impl<T> std::convert::From<Vec2<T>> for mq::Vec2 
-where T: Into<f32>,
-{
-    fn from(myvec: Vec2::<T>) -> mq::Vec2 {
-        mq::Vec2 { x: myvec.0.into(), y: myvec.1.into() }
-    }
-
 }
 
 
