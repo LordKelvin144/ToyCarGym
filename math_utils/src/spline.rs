@@ -31,6 +31,7 @@ pub struct SmoothBezierSpline {
 }
 
 
+#[derive(Debug, PartialEq)]
 pub struct ClosestPointOutput {
     pub parameter: f32,
     pub distance_sq: f32
@@ -93,7 +94,8 @@ impl CubicBezier {
 
         let fp = |t| {
             let pt = self.get(t);
-            self.velocity(t).dot((pt - point).normalized())
+            let v = self.velocity(t);
+            (pt - point).dot(v) * 2.0
         };
 
         let FunctionObservation { x: t, value: distance_sq, ..} = find_min_differentiable(f, fp, 0.0, 1.0, 1e-2);
@@ -282,6 +284,7 @@ mod tests {
         assert_eq!(bezier.closest_point(Vec2(-1.0, -5.0)).parameter, 0.0);
         assert_eq!(bezier.closest_point(Vec2(0.0, 7.0)).parameter, 0.5);
         assert_eq!(bezier.closest_point(Vec2(-2.0, 0.0)).distance_sq, 1.0);
+        assert_eq!(bezier.closest_point(Vec2(-1.0, 0.0)), ClosestPointOutput { parameter: 0.0, distance_sq: 0.0 });
 
         let spline = setup_spline();
         assert_eq!(spline.closest_point(Vec2(-3.0, -7.0)).parameter, 0.0);
@@ -289,6 +292,7 @@ mod tests {
         assert_eq!(spline.closest_point(Vec2(1.5, -5.0)).parameter, 1.5);
         assert_eq!(spline.closest_point(Vec2(5.0, 7.0)).parameter, 2.0);
         assert_eq!(spline.closest_point(Vec2(-4.0, -3.0)).distance_sq, 25.0);
+
     }
 }
 
