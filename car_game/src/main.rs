@@ -4,7 +4,8 @@ use macroquad::prelude::{KeyCode};
 use graphics_utils::{ScreenTransform};
 
 use car_sim::physics::{CarState, CarConfig};
-use car_sim::map::{LidarArray, Road};
+use car_sim::lidar::{LidarArray};
+use car_sim::map::{Road};
 use car_sim::map;
 
 use car_game::graphics::{draw_car, draw_lidar, DrawRoad};
@@ -15,22 +16,16 @@ use car_game::input::{KeyboardInput, CarInputSource};
 async fn main() {
 
     // Create an object tracking coordinate transformations for drawing
-    let mut transform = ScreenTransform::new(10.0);
+    let mut transform = ScreenTransform::new(15.0);
 
     // Create the race map
     let road = map::make_oval();
 
     // Create a LiDAR array
-    let lidar_angles = vec![1.0, 3.0, 5.0, 10.0, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0];
-    let lidar_array = LidarArray::new(lidar_angles);
+    let lidar_array = LidarArray::default();
 
     // Set physical settings for car
-    let config = CarConfig { 
-        length: 4.0,
-        back_axle: 0.5,
-        front_axle: 3.5,
-        ..Default::default()
-    };
+    let config = CarConfig::default();
 
     // Create an object for managing user input
     let keyboard_input = KeyboardInput::default();
@@ -57,10 +52,7 @@ async fn main() {
         state = state.update(&input, dt, &config);
 
         // Check if we have crashed
-        let crashed = road.is_crashed(&state, &config);
-        if crashed {
-            println!("Crashed: position={:?}", state.position)
-        }
+        let _crashed = road.is_crashed(&state, &config);
 
         // Get LIDAR
         let readings = road.read_lidar(&state, &lidar_array);

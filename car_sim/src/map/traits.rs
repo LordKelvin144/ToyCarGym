@@ -1,6 +1,6 @@
-use crate::physics::{CarState, CarConfig};
 use math_utils::Vec2;
-use super::lidar::LidarArray;
+use crate::physics::{CarState, CarConfig};
+use crate::lidar::LidarArray;
 
 
 pub trait Road {

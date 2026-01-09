@@ -155,6 +155,10 @@ impl SmoothBezierSpline {
         previous_length + active_segment.arc_length(t)
     }
 
+    pub fn total_length(&self) -> f32 {
+        self.arc_length(self.segments.len() as f32)
+    }
+
     pub fn closest_point(&self, point: Vec2<f32>) -> ClosestPointOutput {
         let points = self.segments
             .iter()

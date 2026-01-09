@@ -4,7 +4,7 @@ use itertools::Itertools;
 use math_utils::Vec2;
 
 use crate::physics::{CarState, CarConfig};
-use super::lidar::{LidarDistance};
+use crate::lidar::{LidarDistance};
 use super::traits::Road;
 
 

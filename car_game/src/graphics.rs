@@ -1,7 +1,8 @@
 use macroquad::prelude as mq;
 
 use car_sim::physics::{CarState, CarConfig};
-use car_sim::map::{CellMap, SplineMap, LidarArray, Road};
+use car_sim::map::{CellMap, SplineMap, Road};
+use car_sim::lidar::{LidarArray};
 use math_utils::Vec2;
 use graphics_utils::{ScreenTransform, draw_spline};
 

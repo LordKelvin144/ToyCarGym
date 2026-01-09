@@ -1,5 +1,6 @@
-use super::physics::{CarState};
-use super::map::{CellMap, LidarArray, Road};
+use crate::physics::{CarState};
+use crate::map::{CellMap, Road};
+use crate::lidar::{LidarArray};
 
 
 #[derive(Debug)]

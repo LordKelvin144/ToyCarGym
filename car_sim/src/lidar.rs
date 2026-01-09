@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 
 
 // A struct for maintaining the angles of an array of LIDAR sensors
+#[derive(Debug)]
 pub struct LidarArray {
     angles: Vec<f32>
 }
@@ -23,6 +24,12 @@ impl LidarArray {
 
     pub fn get_angles(&self) -> &[f32] {
         &self.angles
+    }
+}
+
+impl Default for LidarArray {
+    fn default() -> Self {
+        LidarArray::new(vec![1.0, 2.0, 5.0, 10.0, 30.0, 45.0, 60.0, 90.0, 120.0])
     }
 }
 

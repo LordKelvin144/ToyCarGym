@@ -24,7 +24,7 @@ pub struct CarState {
 
 impl Default for CarConfig {
     fn default() -> Self {
-        Self { length: 3.0, front_axle: 0.5, back_axle: 2.5, max_delta: 0.5, 
+        Self { length: 4.0, front_axle: 3.5, back_axle: 0.5, max_delta: 0.5, 
             acceleration: 6.0, brake_acceleration: 8.0, steer_speed: 0.7 }
     }
 }
