@@ -7,7 +7,7 @@ use car_sim::map;
 use car_sim::gym;
 
 mod graphics;
-use graphics::SplineRoadExport;
+use graphics::{SplineRoadExport, CarGraphicsExport};
 
 
 #[pyclass(module="gym_car")]
@@ -50,6 +50,10 @@ impl RacingEnv {
         graphics::export_spline_road(&self.sim.road, n_segments)
     }
 
+    fn graphics_state(&self) -> CarGraphicsExport {
+        graphics::export_car_graphics(&self.sim.state, &self.sim.config.car, &self.sim.config.lidar, &self.sim.observe().lidar_readings)
+    }
+
 
 }
 
@@ -64,6 +68,9 @@ mod gym_car {
 
     #[pymodule_export]
     use super::SplineRoadExport;
+
+    #[pymodule_export]
+    use super::CarGraphicsExport;
 
     /// Formats the sum of two numbers as string.
     #[pyfunction]
