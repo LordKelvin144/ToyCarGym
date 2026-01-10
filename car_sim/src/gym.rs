@@ -12,17 +12,32 @@ pub enum Action {
     Brake = 3
 }
 
+pub struct InvalidActionError;
+
+impl TryFrom<u8> for Action {
+    type Error = InvalidActionError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            x if x == Action::Left as u8 => Ok(Action::Left),
+            x if x == Action::Right as u8 => Ok(Action::Right),
+            x if x == Action::Accelerate as u8 => Ok(Action::Accelerate),
+            x if x == Action::Brake as u8 => Ok(Action::Brake),
+            _ => Err(InvalidActionError)
+        }
+    }
+}
+
 
 #[derive(Debug)]
-pub struct Observation {
-    pub lidar_readings: Vec<f32>,
+pub struct TransitionObservation {
     pub reward: f32,
     pub done: bool
 }
 
 
 #[derive(Debug)]
-pub struct ResetObservation {
+pub struct StateObservation {
     pub lidar_readings: Vec<f32>
 }
 
@@ -61,12 +76,6 @@ impl Default for SimConfig {
 
 
 
-pub trait Gym<A,Ro,O> {
-    fn reset(&mut self) -> Ro;
-    fn step(&mut self, action: A) -> O;
-}
-
-
 pub struct Simulator<R>
 {
     pub config: SimConfig,
@@ -76,15 +85,13 @@ pub struct Simulator<R>
 
 
 
-impl Gym<Action,ResetObservation,Observation> for Simulator<SplineMap> {
-    fn reset(&mut self) -> ResetObservation {
-        // self.state = CarState::default();
-        let lidar_readings = self.road.read_lidar(&self.state, &self.config.lidar);
-        ResetObservation { lidar_readings }
+impl<'a> Simulator<SplineMap> {
+    pub fn reset(&mut self) {
+        self.state = CarState::default();
     }
 
-    fn step(&mut self, action: Action) -> Observation {
-        let SimConfig { dt, car: car_cfg, lidar, .. } = &self.config;
+    pub fn step(&mut self, action: Action) -> TransitionObservation {
+        let SimConfig { dt, car: car_cfg, .. } = &self.config;
         let dt = *dt;
 
         let input = match action {
@@ -95,7 +102,6 @@ impl Gym<Action,ResetObservation,Observation> for Simulator<SplineMap> {
         };
         let new_state = self.state.update(&input, dt, car_cfg);
 
-        let lidar_readings = self.road.read_lidar(&new_state, lidar);
         let is_crashed = self.road.is_crashed(&new_state, car_cfg);
 
         let reward = self.reward(&self.state, &new_state, is_crashed);
@@ -104,7 +110,12 @@ impl Gym<Action,ResetObservation,Observation> for Simulator<SplineMap> {
 
         self.state = new_state;
 
-        Observation { lidar_readings, reward, done }
+        TransitionObservation { reward, done }
+    }
+
+    pub fn observe(&self) -> StateObservation {
+        let lidar_readings = self.road.read_lidar(&self.state, &self.config.lidar);
+        StateObservation { lidar_readings }
     }
 
 }

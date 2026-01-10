@@ -6,6 +6,7 @@ members = [
     "graphics_utils",
     "car_sim",
     "car_game",
+    "gym_car",
 ]
 
 resolver = "2"
