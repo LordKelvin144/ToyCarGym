@@ -11,4 +11,5 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = "0.27.0"
 numpy = "0.27.1"
+math_utils = { path = "../math_utils" }
 car_sim = { path = "../car_sim" }

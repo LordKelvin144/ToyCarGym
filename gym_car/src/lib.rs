@@ -6,6 +6,9 @@ use numpy::PyArray1;
 use car_sim::map;
 use car_sim::gym;
 
+mod graphics;
+use graphics::SplineRoadExport;
+
 
 #[pyclass(module="gym_car")]
 struct RacingEnv {
@@ -43,6 +46,10 @@ impl RacingEnv {
         PyArray1::from_vec(py, lidar_readings).unbind()
     }
 
+    fn export_road(&self, n_segments: usize) -> SplineRoadExport {
+        graphics::export_spline_road(&self.sim.road, n_segments)
+    }
+
 
 }
 
@@ -54,6 +61,9 @@ mod gym_car {
 
     #[pymodule_export]
     use super::RacingEnv;
+
+    #[pymodule_export]
+    use super::SplineRoadExport;
 
     /// Formats the sum of two numbers as string.
     #[pyfunction]
