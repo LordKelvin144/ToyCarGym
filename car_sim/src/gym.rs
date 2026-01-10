@@ -102,6 +102,8 @@ impl Gym<Action,ResetObservation,Observation> for Simulator<SplineMap> {
 
         let done = is_crashed;
 
+        self.state = new_state;
+
         Observation { lidar_readings, reward, done }
     }
 
@@ -143,20 +145,35 @@ mod tests {
     }
 
     #[test]
-    fn test_run() {
+    fn test_stable() {
         let mut env = make_sim();
         let _reset_obs = env.reset();
-        for _ in 1 .. 5 {
-            let _observation = env.step(Action::Accelerate);
-        }
-        for _ in 1 .. 10 {
-            let _observation = env.step(Action::Brake);
-        }
-        for _ in 1 .. 5 {
-            let _observation = env.step(Action::Left);
-            let _observation = env.step(Action::Right);
-        }
+        let _observation = env.step(Action::Accelerate);
+        let _observation = env.step(Action::Brake);
+        let _observation = env.step(Action::Left);
+        let _observation = env.step(Action::Right);
+    }
 
+    #[test]
+    fn test_crash() {
+        let mut env = make_sim();
+        let mut done = false;
+        let mut reward = 0.0;
+
+        let _reset_obs = env.reset();
+
+        // Accelerate uncontrollably; should crash eventually
+        for _ in 1 .. 50 {
+            let observation = env.step(Action::Accelerate);
+            done = observation.done;
+            reward = observation.reward;
+            dbg!(reward, done);
+            if done {
+                break
+            }
+        }
+        assert_eq!(done, true);
+        assert!(reward < 0.0)
     }
 }
 
