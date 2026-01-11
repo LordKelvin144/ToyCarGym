@@ -53,7 +53,7 @@ impl RacingEnv {
     fn step(&mut self, action: u8) -> PyResult<(f32, bool)> {
         let action = gym::Action::try_from(action)
             .map_err(|_| PyValueError::new_err(
-                    format!("Invalid action value '{}'. Action must be integer between 0 and 3.", action)
+                    format!("Invalid action value '{}'. Action must be integer between 0 and 4.", action)
                 )
             )?;
 

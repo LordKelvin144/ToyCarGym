@@ -9,7 +9,8 @@ pub enum Action {
     Left = 0,
     Right = 1,
     Accelerate = 2,
-    Brake = 3
+    Brake = 3,
+    Coast = 4,
 }
 
 pub struct InvalidActionError;
@@ -23,6 +24,7 @@ impl TryFrom<u8> for Action {
             x if x == Action::Right as u8 => Ok(Action::Right),
             x if x == Action::Accelerate as u8 => Ok(Action::Accelerate),
             x if x == Action::Brake as u8 => Ok(Action::Brake),
+            x if x == Action::Coast as u8 => Ok(Action::Coast),
             _ => Err(InvalidActionError)
         }
     }
@@ -103,6 +105,7 @@ impl Simulator<SplineMap> {
             Action::Right => CarInput { forward_acc: 0.0, target_delta: -car_cfg.max_delta, braking: false },
             Action::Accelerate => CarInput { forward_acc: car_cfg.acceleration, target_delta: 0.0, braking: false },
             Action::Brake => CarInput { forward_acc: 0.0, target_delta: 0.0, braking: true },
+            Action::Coast => CarInput { forward_acc: 0.0, target_delta: 0.0, braking: false },
         };
         let new_state = self.state.update(&input, dt, car_cfg);
 
