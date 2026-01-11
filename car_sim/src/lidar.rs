@@ -49,13 +49,7 @@ impl Ord for LidarDistance {
             (Self::Specific(t1), Self::Specific(t2)) => {
                 assert!(t1.is_finite());
                 assert!(t2.is_finite());
-                if t1 < t2 { 
-                    Ordering::Less 
-                } else if t1 > t2 { 
-                    Ordering::Greater
-                } else if t1 == t2 {
-                    Ordering::Equal
-                } else {panic!("Unexpected logic branch");}
+                t1.total_cmp(t2)
             }
 
         }

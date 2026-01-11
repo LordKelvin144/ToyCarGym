@@ -12,6 +12,7 @@ enum IntervalParity {
     Falling
 }
 
+#[derive(Clone, Copy)]
 pub struct FunctionObservation { 
     pub x: f32, 
     pub value: f32, 
@@ -28,7 +29,8 @@ enum BisectionUpdate {
 
 impl FunctionObservation {
     pub fn new(x: f32, value: f32) -> Self {
-        let sign = match value.partial_cmp(&0.0).expect("Observation to be finite.") {
+        assert!(value.is_finite(), "Tried to make function observation at x={} with non-finite value {}", x, value);
+        let sign = match value.total_cmp(&0.0) {
             Ordering::Equal => Sign::Zero,
             Ordering::Less => Sign::Negative,
             Ordering::Greater => Sign::Positive,
@@ -128,38 +130,34 @@ where
 
         // Select a uniform grid of points and compute the value at each
         let dx = (x_max-x_min) / steps as f32;
-        let values: Vec<f32> = (0 ..= steps).map(|i| f(x_min + i as f32 * dx)).collect();
-
-        // Get the minimizing sample point
-        let (i, value_i) = values.iter().enumerate()
-            .fold(None, |accumulator, (i, v)| {  // We fold such that we track the distance and
-                                                 // index of the smallest distance
+        let obs_i = (0 ..= steps).map(|i| {
+                let x = x_min + i as f32 * dx;
+                FunctionObservation::new(x, f(x))
+            })
+            .fold(None, |accumulator, obs| {  // We fold such that we track the distance and
+                                              // index of the smallest distance
                 match accumulator {
-                    None => Some((i, v)),
-                    Some((i_other, v_other)) => match v.partial_cmp(v_other) {
-                        None => panic!("Comparison should always work"),
-                        Some(Ordering::Equal) => Some((i, v)),
-                        Some(Ordering::Less) => Some((i,v)),
-                        Some(Ordering::Greater) => Some((i_other, v_other)),
+                    None => Some(obs),
+                    Some(obs_other) => match obs.value.total_cmp(&obs_other.value) {
+                        Ordering::Equal | Ordering::Less => Some(obs),
+                        Ordering::Greater => Some(obs_other),
                     }
                 }
             })
             .expect("values to have at least one element");
-        let xi = x_min + i as f32 * dx;
 
         // Do derivative-based extremum finding around the approximate input
-        let x_left = (xi-dx).max(x_min);
-        let x_right = (xi+dx).min(x_max);
+        let x_left = (obs_i.x-dx).max(x_min);
+        let x_right = (obs_i.x+dx).min(x_max);
 
         if let Some(x_lm) = find_local_min_differentiable(fp, x_left, x_right, width_threshold) {
-            let value_lm = f(x_lm);
-            match value_lm.partial_cmp(value_i).expect("input x to be finite") {
-                Ordering::Less => FunctionObservation::new(x_lm, value_lm),
-                Ordering::Greater => FunctionObservation::new(xi, *value_i),
-                Ordering::Equal => FunctionObservation::new(xi, *value_i),
+            let obs_lm = FunctionObservation::new(x_lm, f(x_lm));
+            match obs_lm.value.total_cmp(&obs_i.value) {
+                Ordering::Less => obs_lm,
+                Ordering::Greater | Ordering::Equal => obs_i,
             } 
         } else {
-            FunctionObservation::new(xi, *value_i)
+            obs_i
         }
 }
 
@@ -173,7 +171,7 @@ mod tests {
         let f = |x| x*x - 9.0;
 
         assert_eq!(find_root(f, 1.0, 4.0, 1e-3), Some(3.0));  // Will be found at an exact bisection
-        assert_eq!(find_root(f, 0.0, 3.1415926535, 1e-3), Some(3.0));
+        assert_eq!(find_root(f, 0.0, std::f32::consts::PI, 1e-3), Some(3.0));
     }
 
     #[test]
@@ -184,7 +182,7 @@ mod tests {
 
         // Case when global minimum is local minimum inside the range
         let extremum = find_min_differentiable(f, fp, 3.0, 3.5, 1e-3);
-        assert_eq!(extremum.x, 3.14159265358979);
+        assert_eq!(extremum.x, std::f32::consts::PI);
         assert_eq!(extremum.value, -1.0);
 
         // Case when global minimum is boundary value

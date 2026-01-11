@@ -106,6 +106,7 @@ impl CubicBezier {
 
 impl SmoothBezierSpline {
     pub fn new(controls: Vec<BezierControl>) -> Self {
+        assert!(!controls.is_empty(), "Tried to construct SmoothBezierSpline with empty control points.");
         let segments: Vec<CubicBezier> = controls.iter()
             .tuple_windows()
             .map(|(control_start, control_end)| {
@@ -173,7 +174,7 @@ impl SmoothBezierSpline {
 
         points.fold(None, |accumulator, point| match accumulator {
             None => Some(point),
-            Some(point_p) => match point_p.distance_sq.partial_cmp(&point.distance_sq).expect("distance to be finite") {
+            Some(point_p) => match point_p.distance_sq.total_cmp(&point.distance_sq) {
                 Ordering::Less | Ordering::Equal => Some(point_p),
                 Ordering::Greater => Some(point)
             }
