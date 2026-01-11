@@ -19,8 +19,29 @@ struct RacingEnv {
 #[pymethods]
 impl RacingEnv {
     #[new]
-    fn new() -> Self {
-        let config = gym::SimConfig::default();
+    #[pyo3(
+        signature = (dt=None, crash_reward=None, travel_coeff=None, center_coeff=None)
+    )]
+    fn new(
+        dt: Option<f32>,
+        crash_reward: Option<f32>,
+        travel_coeff: Option<f32>,
+        center_coeff: Option<f32>,
+    ) -> Self {
+        let mut config = gym::SimConfig::default();
+        if let Some(dt) = dt {
+            config.dt = dt;
+        }
+        if let Some(crash_reward) = crash_reward {
+            config.reward.crash_reward = crash_reward;
+        }
+        if let Some(travel_coeff) = travel_coeff {
+            config.reward.travel_coeff = travel_coeff;
+        }
+        if let Some(center_coeff) = center_coeff {
+            config.reward.center_coeff = center_coeff;
+        }
+
         let road = map::make_oval();
         Self { sim: gym::Simulator::new(config, road) }
     }
@@ -54,7 +75,20 @@ impl RacingEnv {
         graphics::export_car_graphics(&self.sim.state, &self.sim.config.car, &self.sim.config.lidar, &self.sim.observe().lidar_readings)
     }
 
+    #[getter]
+    fn dt(&self) -> f32 {
+        self.sim.config.dt
+    }
 
+    #[getter]
+    fn t(&self) -> f32 {
+        self.sim.get_t()
+    }
+
+    #[getter]
+    fn i(&self) -> usize {
+        self.sim.get_i()
+    }
 }
 
 

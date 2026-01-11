@@ -81,6 +81,8 @@ pub struct Simulator<R>
     pub config: SimConfig,
     pub road: R,
     pub state: CarState,
+    t: f32,
+    i: usize,
 }
 
 
@@ -88,6 +90,8 @@ pub struct Simulator<R>
 impl Simulator<SplineMap> {
     pub fn reset(&mut self) {
         self.state = CarState::default();
+        self.t = 0.0;
+        self.i = 0;
     }
 
     pub fn step(&mut self, action: Action) -> TransitionObservation {
@@ -108,7 +112,10 @@ impl Simulator<SplineMap> {
 
         let done = is_crashed;
 
+        // Do the transition
         self.state = new_state;
+        self.t += dt;
+        self.i += 1;
 
         TransitionObservation { reward, done }
     }
@@ -124,7 +131,7 @@ impl Simulator<SplineMap> {
     pub fn new(config: SimConfig, road: SplineMap) -> Self {
         let state = CarState::default();
 
-        Self { config, road, state }
+        Self { config, road, state, t: 0.0, i: 0 }
     }
 
     fn reward(&self, state: &CarState, new_state: &CarState, is_crashed: bool) -> f32 {
@@ -141,6 +148,16 @@ impl Simulator<SplineMap> {
             + rcfg.center_coeff * d_sq_decrease 
             + rcfg.crash_reward*(is_crashed as i32 as f32)
     }
+
+    /// Get the clock of the simulator
+    pub fn get_t(&self) -> f32 {
+        self.t
+    }
+
+    /// Get the iteration that the simulator is at
+    pub fn get_i(&self) -> usize {
+        self.i
+    }
 }
 
 
@@ -150,7 +167,7 @@ mod tests {
     use crate::map;
 
     fn make_sim() -> Simulator<SplineMap> {
-        let config = SimConfig::default();
+        let config = SimConfig { dt: 0.25, ..SimConfig::default() };
         let road = map::make_oval();
         Simulator::new(config, road)
     }
@@ -158,11 +175,13 @@ mod tests {
     #[test]
     fn test_stable() {
         let mut env = make_sim();
-        let _reset_obs = env.reset();
+        env.reset();
         let _observation = env.step(Action::Accelerate);
         let _observation = env.step(Action::Brake);
         let _observation = env.step(Action::Left);
         let _observation = env.step(Action::Right);
+        assert_eq!(env.get_i(), 4);
+        assert_eq!(env.get_t(), 4.0*env.config.dt)
     }
 
     #[test]
@@ -171,19 +190,17 @@ mod tests {
         let mut done = false;
         let mut reward = 0.0;
 
-        let _reset_obs = env.reset();
+        env.reset();
 
         // Accelerate uncontrollably; should crash eventually
         for _ in 1 .. 50 {
-            let observation = env.step(Action::Accelerate);
-            done = observation.done;
-            reward = observation.reward;
+            TransitionObservation { done, reward } = env.step(Action::Accelerate);
             dbg!(reward, done);
             if done {
                 break
             }
         }
-        assert_eq!(done, true);
+        assert!(done);
         assert!(reward < 0.0)
     }
 }
