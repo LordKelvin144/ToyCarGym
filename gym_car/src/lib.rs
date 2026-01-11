@@ -95,8 +95,6 @@ impl RacingEnv {
 /// A Python module implemented in Rust.
 #[pymodule]
 mod gym_car {
-    use pyo3::prelude::*;
-
     #[pymodule_export]
     use super::RacingEnv;
 
@@ -105,10 +103,4 @@ mod gym_car {
 
     #[pymodule_export]
     use super::CarGraphicsExport;
-
-    /// Formats the sum of two numbers as string.
-    #[pyfunction]
-    fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-        Ok((a + b).to_string())
-    }
 }
