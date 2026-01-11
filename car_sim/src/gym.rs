@@ -145,7 +145,8 @@ impl Simulator<SplineMap> {
         let travel1 = self.road.spline.arc_length(p1);
         let travel2 = self.road.spline.arc_length(p2);
 
-        let travel = (travel2 - travel1) % self.road.spline.total_length();
+        let total_length = self.road.spline.total_length();
+        let travel = (travel2 - travel1 + 1.5*total_length) % total_length - 0.5*total_length;
         let d_sq_decrease = d2_sq - d1_sq;
         rcfg.travel_coeff * travel 
             + rcfg.center_coeff * d_sq_decrease 
