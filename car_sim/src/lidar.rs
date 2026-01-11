@@ -12,7 +12,7 @@ impl LidarArray {
     pub fn new(angles: Vec<f32>) -> Self {
         let angles = angles.clone().into_iter().rev().map(|angle| -angle)
             .chain(std::iter::once(0.0))
-            .chain(angles.into_iter())
+            .chain(angles)
             .map(|angle| angle.to_radians())
             .collect();
         Self{ angles }
@@ -43,7 +43,7 @@ pub enum LidarDistance {
 impl Ord for LidarDistance {
     fn cmp(&self, other: &Self) -> Ordering {
         match (self, other) {
-            (Self::Far, Self::Far) => panic!("Cannot compar two instances of 'far'"),
+            (Self::Far, Self::Far) => panic!("Cannot compare two instances of 'LidarDistance::Far'"),
             (Self::Specific(_), Self::Far) => Ordering::Less,
             (Self::Far, Self::Specific(_)) => Ordering::Greater,
             (Self::Specific(t1), Self::Specific(t2)) => {
@@ -71,10 +71,7 @@ impl PartialOrd for LidarDistance {
 
 impl PartialEq for LidarDistance {
     fn eq(&self, other: &Self) -> bool {
-        match self.cmp(other) {
-            Ordering::Equal => true,
-            _ => false
-        }
+        matches!(self.cmp(other), Ordering::Equal)    
     }
 }
 

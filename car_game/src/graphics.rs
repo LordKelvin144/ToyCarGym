@@ -62,12 +62,12 @@ pub fn draw_car(state: &CarState, config: &CarConfig, transform: &ScreenTransfor
     let br_corner = transform.to_screen(br_corner);
     let fl_corner = transform.to_screen(fl_corner);
     let fr_corner = transform.to_screen(fr_corner);
-    mq::draw_triangle(bl_corner.into(),
-                      fl_corner.into(),
-                      fr_corner.into(), mq::BLUE);
-    mq::draw_triangle(fr_corner.into(),
-                      br_corner.into(),
-                      bl_corner.into(), mq::BLUE);
+    mq::draw_triangle(bl_corner,
+                      fl_corner,
+                      fr_corner, mq::BLUE);
+    mq::draw_triangle(fr_corner,
+                      br_corner,
+                      bl_corner, mq::BLUE);
 
     mq::draw_line(bl_corner.x, bl_corner.y, fl_corner.x, fl_corner.y, 3.0, mq::RED);
     mq::draw_line(fl_corner.x, fl_corner.y, fr_corner.x, fr_corner.y, 3.0, mq::GREEN);
@@ -115,7 +115,7 @@ pub fn draw_lidar(state: &CarState, lidar: &LidarArray, readings: &[f32], transf
     let lidar_pos = state.position;
     let lidar_pos_screen = transform.to_screen(state.position);
 
-    let points = lidar.get_angles().into_iter().zip(readings)
+    let points = lidar.get_angles().iter().zip(readings)
         .map(|(&angle, &reading)| {
             let direction = state.unit_forward.rotate(angle);
             transform.to_screen(lidar_pos + direction*reading)

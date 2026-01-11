@@ -56,7 +56,7 @@ impl OpenInterval {
     }
 
     fn width(&self) -> f32 {
-        return self.right.x - self.left.x
+        self.right.x - self.left.x
     }
 }
 
@@ -136,7 +136,7 @@ where
                                                  // index of the smallest distance
                 match accumulator {
                     None => Some((i, v)),
-                    Some((i_other, v_other)) => match v.partial_cmp(&v_other) {
+                    Some((i_other, v_other)) => match v.partial_cmp(v_other) {
                         None => panic!("Comparison should always work"),
                         Some(Ordering::Equal) => Some((i, v)),
                         Some(Ordering::Less) => Some((i,v)),

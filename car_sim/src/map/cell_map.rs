@@ -72,15 +72,10 @@ impl CellMap {
         }
 
         // If the player moved between adjacent squares, we have not crashed
-        if idx2 == idx1 + 1 || idx1 == idx2 + 1{
-            true
-        } else if (idx1, idx2) == (0, self.cells.len()-1) {
-            true
-        } else if (idx1, idx2) == (self.cells.len()-1, 0) {
-            true
-        } else {
-            false
-        }
+        idx2 == idx1 + 1 
+            || idx1 == idx2 + 1 
+            || (idx1, idx2) == (0, self.cells.len()-1) 
+            || (idx1, idx2) == (self.cells.len()-1, 0)
     }
 }
 
@@ -88,7 +83,7 @@ impl Road for CellMap {
     fn is_crashed(&self, state: &CarState, config: &CarConfig) -> bool {
         let back_point = state.position - state.unit_forward*config.back_axle;
         let front_point = back_point + state.unit_forward*config.length;
-        return !self.step_is_along(back_point, front_point)
+        !self.step_is_along(back_point, front_point)
     }
 
     /// Takes in a point and (non-normalized) direction defining a ray,

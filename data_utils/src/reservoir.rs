@@ -55,6 +55,10 @@ impl<T> Reservoir<T> {
         self.data.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
     pub fn sample(&mut self) -> Option<&T> {
         (0 .. self.data.len())
             .choose(&mut self.rng)
@@ -93,7 +97,7 @@ mod tests {
     #[test]
     fn test_add_after_capacity() {
         let sum: f32 = (0 .. 8000)
-            .map(|try_idx| {
+            .map(|_try_idx| {
                 let mut reservoir = Reservoir::<f32>::new(2);
 
                 for i in 0 .. 4 {
@@ -101,11 +105,11 @@ mod tests {
                 }
                 assert_eq!(reservoir.len(), 2);
 
-                let outcome = match (reservoir[0] == 3.0 || reservoir[1] == 3.0) {
+                // See if 3.0 is present, save as f32
+                match reservoir[0] == 3.0 || reservoir[1] == 3.0 {
                     true => 1.0_f32,
                     false => 0.0_f32
-                };
-                outcome
+                }
             })
             .sum();
 

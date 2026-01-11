@@ -85,7 +85,7 @@ pub struct Simulator<R>
 
 
 
-impl<'a> Simulator<SplineMap> {
+impl Simulator<SplineMap> {
     pub fn reset(&mut self) {
         self.state = CarState::default();
     }

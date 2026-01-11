@@ -61,7 +61,7 @@ impl ChunkedLidarState {
                map: &CellMap, 
                lidar_array: &LidarArray,
                chunking_config: &ChunkingConfig) -> Self {
-        let lidar_readings = map.read_lidar(&state, &lidar_array);
+        let lidar_readings = map.read_lidar(state, lidar_array);
 
         let lidar = lidar_readings.into_iter()
             .map(|reading| chunking_config.lidar.get_chunk(reading))

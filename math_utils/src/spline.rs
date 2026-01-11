@@ -171,14 +171,13 @@ impl SmoothBezierSpline {
                 }
             });
 
-        let output = points.fold(None, |accumulator, point| match accumulator {
+        points.fold(None, |accumulator, point| match accumulator {
             None => Some(point),
             Some(point_p) => match point_p.distance_sq.partial_cmp(&point.distance_sq).expect("distance to be finite") {
                 Ordering::Less | Ordering::Equal => Some(point_p),
                 Ordering::Greater => Some(point)
             }
-        }).expect("at least one distance to exist");
-        output
+        }).expect("at least one distance to exist")
     }
 }
 
