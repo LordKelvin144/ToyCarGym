@@ -49,11 +49,15 @@ pub struct RewardConfig {
     pub travel_coeff: f32,
     pub center_coeff: f32,
     pub crash_reward: f32,
+    pub center_integral_coeff: f32,
 }
 
 impl Default for RewardConfig {
     fn default() -> Self {
-        Self { travel_coeff: 1.0, center_coeff: 0.5, crash_reward: -100.0 }
+        Self { 
+            travel_coeff: 1.0, center_coeff: 2.0, crash_reward: -100.0,
+            center_integral_coeff: 1.0
+        }
     }
 }
 
@@ -150,6 +154,7 @@ impl Simulator<SplineMap> {
         let d_sq_decrease = d2_sq - d1_sq;
         rcfg.travel_coeff * travel 
             + rcfg.center_coeff * d_sq_decrease 
+            - rcfg.center_integral_coeff * d2_sq * self.config.dt
             + rcfg.crash_reward*(is_crashed as i32 as f32)
     }
 
