@@ -40,7 +40,9 @@ pub struct TransitionObservation {
 
 #[derive(Debug)]
 pub struct StateObservation {
-    pub lidar_readings: Vec<f32>
+    pub lidar_readings: Vec<f32>,
+    pub steer_delta: f32,
+    pub speed: f32,
 }
 
 
@@ -129,7 +131,8 @@ impl Simulator<SplineMap> {
 
     pub fn observe(&self) -> StateObservation {
         let lidar_readings = self.road.read_lidar(&self.state, &self.config.lidar);
-        StateObservation { lidar_readings }
+        let CarState { steer_delta, speed, .. } = self.state;
+        StateObservation { lidar_readings, steer_delta, speed }
     }
 
 }

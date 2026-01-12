@@ -12,7 +12,9 @@ use graphics::{SplineRoadExport, CarGraphicsExport};
 
 #[pyclass(module="gym_car")]
 struct RacingEnv {
-    sim: gym::Simulator<map::SplineMap>
+    sim: gym::Simulator<map::SplineMap>,
+    observe_delta: bool,
+    observe_speed: bool,
 }
 
 
@@ -20,13 +22,16 @@ struct RacingEnv {
 impl RacingEnv {
     #[new]
     #[pyo3(
-        signature = (dt=None, crash_reward=None, travel_coeff=None, center_coeff=None)
+        signature = (dt=None, crash_reward=None, travel_coeff=None, center_coeff=None, center_integral_coeff=None, observe_delta=true, observe_speed=true)
     )]
     fn new(
         dt: Option<f32>,
         crash_reward: Option<f32>,
         travel_coeff: Option<f32>,
         center_coeff: Option<f32>,
+        center_integral_coeff: Option<f32>,
+        observe_delta: bool,
+        observe_speed: bool
     ) -> Self {
         let mut config = gym::SimConfig::default();
         if let Some(dt) = dt {
@@ -41,9 +46,12 @@ impl RacingEnv {
         if let Some(center_coeff) = center_coeff {
             config.reward.center_coeff = center_coeff;
         }
+        if let Some(center_integral_coeff) = center_integral_coeff {
+            config.reward.center_integral_coeff = center_integral_coeff;
+        }
 
         let road = map::make_oval();
-        Self { sim: gym::Simulator::new(config, road) }
+        Self { sim: gym::Simulator::new(config, road), observe_delta, observe_speed }
     }
 
     fn reset(&mut self) {
@@ -63,8 +71,16 @@ impl RacingEnv {
     }
 
     fn observe<'py>(&self, py: Python<'py>) -> Py<PyArray1<f32>> {
-        let gym::StateObservation { lidar_readings } = self.sim.observe();
-        PyArray1::from_vec(py, lidar_readings).unbind()
+        let gym::StateObservation { lidar_readings, steer_delta, speed } = self.sim.observe();
+        let mut data = lidar_readings;
+        if self.observe_delta {
+            data.push(steer_delta);
+        }
+        if self.observe_speed {
+            data.push(speed);
+        }
+
+        PyArray1::from_vec(py, data).unbind()
     }
 
     fn export_road(&self, n_segments: usize) -> SplineRoadExport {
@@ -88,6 +104,11 @@ impl RacingEnv {
     #[getter]
     fn i(&self) -> usize {
         self.sim.get_i()
+    }
+
+    #[getter]
+    fn observation_dim(&self) -> usize {
+        self.sim.config.lidar.n_angles() + self.observe_delta as usize + self.observe_speed as usize
     }
 }
 
