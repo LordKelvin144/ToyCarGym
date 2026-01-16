@@ -101,7 +101,7 @@ impl DrawRoad for CellMap {
 
 impl DrawRoad for SplineMap {
     fn draw_road(&self, transform: &ScreenTransform) {
-        let segments = 64;
+        let segments = 128;
         let color = mq::Color { r: 0.3, g: 0.3, b: 0.3, a: 1.0 };
         draw_spline(&self.spline, transform, self.width, segments, color);
         draw_spline(&self.spline, transform, 0.1, segments, mq::WHITE);

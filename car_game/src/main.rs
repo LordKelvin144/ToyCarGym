@@ -16,10 +16,10 @@ use car_game::input::{KeyboardInput, CarInputSource};
 async fn main() {
 
     // Create an object tracking coordinate transformations for drawing
-    let mut transform = ScreenTransform::new(15.0);
+    let mut transform = ScreenTransform::new(10.0);
 
     // Create the race map
-    let road = map::make_oval();
+    let road = map::make_racetrack();
 
     // Create a LiDAR array
     let lidar_array = LidarArray::default();

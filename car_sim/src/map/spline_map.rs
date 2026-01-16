@@ -81,3 +81,19 @@ pub fn make_oval() -> SplineMap {
     let width = 8.0;
     SplineMap::new(spline, width)
 }
+
+pub fn make_racetrack() -> SplineMap {
+    let spline = SmoothBezierSpline::new(
+        vec![
+            BezierControl { point: Vec2(0.0, 0.0), velocity: Vec2(50.0, -10.0) },
+            BezierControl { point: Vec2(87.5, 50.0), velocity: Vec2(0.0, 25.0) },
+            BezierControl { point: Vec2(50.0, 150.0), velocity: Vec2(-40.0, 10.0) },
+            BezierControl { point: Vec2(-25.0, 100.0), velocity: Vec2(0.0, -40.0) },
+            BezierControl { point: Vec2(50.0, 75.0), velocity: Vec2(25.0, -25.0) },
+            BezierControl { point: Vec2(0.0, 50.0), velocity: Vec2(-20.0, 0.0) },
+            BezierControl { point: Vec2(0.0, 0.0), velocity: Vec2(50.0, -10.0) },
+        ]
+    );
+    let width = 10.0;
+    SplineMap::new(spline, width)
+}

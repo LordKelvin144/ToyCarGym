@@ -50,7 +50,7 @@ impl RacingEnv {
             config.reward.center_integral_coeff = center_integral_coeff;
         }
 
-        let road = map::make_oval();
+        let road = map::make_racetrack();
         Self { sim: gym::Simulator::new(config, road), observe_delta, observe_speed }
     }
 
