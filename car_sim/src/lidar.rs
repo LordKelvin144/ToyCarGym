@@ -10,9 +10,9 @@ pub struct LidarArray {
 
 impl LidarArray {
     pub fn new(angles: Vec<f32>) -> Self {
-        let angles = angles.clone().into_iter().rev().map(|angle| -angle)
+        let angles = angles.clone().into_iter().rev()
             .chain(std::iter::once(0.0))
-            .chain(angles)
+            .chain(angles.iter().map(|angle| -angle))
             .map(|angle| angle.to_radians())
             .collect();
         Self{ angles }
@@ -29,7 +29,7 @@ impl LidarArray {
 
 impl Default for LidarArray {
     fn default() -> Self {
-        LidarArray::new(vec![1.0, 2.0, 5.0, 10.0, 30.0, 45.0, 60.0, 90.0, 120.0])
+        LidarArray::new(vec![2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 90.0, 120.0])
     }
 }
 
