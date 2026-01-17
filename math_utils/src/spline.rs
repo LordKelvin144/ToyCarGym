@@ -15,6 +15,62 @@ pub struct CubicBezier {
     c2: Vec2<f32>,
     c3: Vec2<f32>,
     arc_length: f32,
+    bounding_box: BoundingBox,
+}
+
+
+#[derive(Debug)]
+struct BoundingBox {
+    pub min_x: f32,
+    pub max_x: f32,
+    pub min_y: f32,
+    pub max_y: f32,
+    pub corners: [Vec2<f32>; 4]
+}
+
+impl BoundingBox {
+    fn new(min_x: f32, max_x: f32, min_y: f32, max_y: f32) -> Self {
+        let corners = [Vec2(min_x, min_y), Vec2(min_x, max_y), Vec2(max_x, min_y), Vec2(max_x, max_y)];
+        Self { min_x, max_x, min_y, max_y, corners }
+    }
+
+    pub fn closest_point(&self, point: Vec2::<f32>) -> Vec2::<f32> {
+        let Vec2(x, y) = point;
+        match (x <= self.min_x, x > self.max_x, y <= self.min_y, y > self.max_y) {
+            // Corner quadrants
+            (true, _, true, _) => Vec2(self.min_x, self.min_y),
+            (true, _, _, true) => Vec2(self.min_x, self.max_y),
+            (_, true, _, true) => Vec2(self.max_x, self.max_y),
+            (_, true, true, _) => Vec2(self.max_x, self.min_y),
+            
+            // Middle quadrant
+            (false, false, false, false) => Vec2(x, y),
+
+            // Edge quadrants
+            (true, false, false, false) => Vec2(self.min_x, y),
+            (false, true, false, false) => Vec2(self.max_x, y),
+            (false, false, true, false) => Vec2(x, self.min_y),
+            (false, false, false, true) => Vec2(x, self.max_y),
+
+            (true, true, _, _) => panic!("Impossible quadrant! (x,y)=({},{}), bbox={:?}", x, y, self),
+            (_, _, true, true) => panic!("Impossible quadrant! (x,y)=({},{}), bbox={:?}", x, y, self),
+        }
+    }
+
+    pub fn farthest_point(&self, point: Vec2::<f32>) -> Vec2::<f32> {
+        let (corner, _d2) = self.corners.iter()
+            .map(|corner| {
+                let delta = point - *corner;
+                let d2 = delta.dot(delta);
+                (*corner, d2)
+            })
+            .reduce(|(corner, d2): (Vec2<_>, f32), (new_corner, new_d2): (Vec2<_>, f32)| match new_d2.total_cmp(&d2) {
+                Ordering::Greater => (new_corner, new_d2),
+                _ => (corner, d2),
+            })
+            .expect("at least one corner to exist");
+        corner
+    }
 }
 
 
@@ -49,9 +105,11 @@ impl CubicBezier {
         let mut this = CubicBezier {
             start, p1, p2, end,
             c1, c2, c3,
-            arc_length: 0.0
+            arc_length: 0.0,
+            bounding_box: BoundingBox::new(0.0, 0.0, 0.0, 0.0),
         };
         this.arc_length = this._arc_length(0.0, 1.0, 32);
+        this.bounding_box = this._bounding_box();
         this
     }
 
@@ -84,6 +142,20 @@ impl CubicBezier {
         } else {
             self._arc_length(0.0, t, 32)
         }
+    }
+
+    fn _bounding_box(&self) -> BoundingBox {
+        let fx = |t| { self.get(t).0 };
+        let fpx = |t| { self.velocity(t).0 };
+        let min_x = find_min_differentiable(fx, fpx, 0.0, 1.0, 1e-4).value;
+        let max_x = -find_min_differentiable(|t| -fx(t), |t| -fpx(t), 0.0, 1.0, 1e-4).value;
+
+        let fy = |t| { self.get(t).1 };
+        let fpy = |t| { self.velocity(t).1 };
+
+        let min_y = find_min_differentiable(fy, fpy, 0.0, 1.0, 1e-4).value;
+        let max_y = -find_min_differentiable(|t| -fy(t), |t| -fpy(t), 0.0, 1.0, 1e-4).value;
+        BoundingBox::new(min_x, max_x, min_y, max_y)
     }
 
     pub fn closest_point(&self, point: Vec2<f32>) -> ClosestPointOutput {
@@ -161,14 +233,44 @@ impl SmoothBezierSpline {
     }
 
     pub fn closest_point(&self, point: Vec2<f32>) -> ClosestPointOutput {
+
+        // First inspect bounding boxes to get upper bound on distance_sq
+        //
+        // Store distance squared to farthest and closest corner
+        let mut min_d2 = Vec::<f32>::with_capacity(self.segments.len());
+        let mut upper_bound = f32::INFINITY;
+
+        for segment in &self.segments {
+            let closest_point = segment.bounding_box.closest_point(point);
+            let farthest_point = segment.bounding_box.farthest_point(point);
+
+            let closest_d2 = {
+                let delta = closest_point - point;
+                delta.dot(delta)
+            };
+            let farthest_d2 = {
+                let delta = farthest_point - point;
+                delta.dot(delta)
+            };
+
+            if farthest_d2 < upper_bound {
+                upper_bound = farthest_d2;
+            }
+            min_d2.push(closest_d2)
+        }
+
         let points = self.segments
             .iter()
             .enumerate()
-            .map(|(i, segment)| {
-                let point_output = segment.closest_point(point);
-                ClosestPointOutput { 
-                    parameter: i as f32 + point_output.parameter,
-                    distance_sq: point_output.distance_sq
+            .filter_map(|(i, segment)| {
+                if min_d2[i] > upper_bound {
+                    None
+                } else {
+                    let point_output = segment.closest_point(point);
+                    Some(ClosestPointOutput { 
+                        parameter: i as f32 + point_output.parameter,
+                        distance_sq: point_output.distance_sq
+                    })
                 }
             });
 
@@ -298,6 +400,30 @@ mod tests {
         assert_eq!(spline.closest_point(Vec2(-4.0, -3.0)).distance_sq, 25.0);
 
     }
+
+    #[test]
+    fn test_bounding_box() {
+        let bbox = BoundingBox::new(-1.0, 1.0, -1.0, 1.0);
+        assert_eq!(bbox.closest_point(Vec2(-2.0, -2.0)), Vec2(-1.0, -1.0));
+        assert_eq!(bbox.closest_point(Vec2(2.0, -2.0)), Vec2(1.0, -1.0));
+        assert_eq!(bbox.closest_point(Vec2(2.0, 2.0)), Vec2(1.0, 1.0));
+        assert_eq!(bbox.closest_point(Vec2(-2.0, 2.0)), Vec2(-1.0, 1.0));
+
+        assert_eq!(bbox.closest_point(Vec2(0.3, -2.0)), Vec2(0.3, -1.0));
+        assert_eq!(bbox.closest_point(Vec2(0.3, 2.0)), Vec2(0.3, 1.0));
+        assert_eq!(bbox.closest_point(Vec2(-2.0, 0.2)), Vec2(-1.0, 0.2));
+        assert_eq!(bbox.closest_point(Vec2(1.0, 0.2)), Vec2(1.0, 0.2));
+
+        assert_eq!(bbox.closest_point(Vec2(0.3, 0.2)), Vec2(0.3, 0.2));
+
+        let bezier = setup_bezier();
+
+        let bbox = bezier._bounding_box();
+        assert_eq!(bbox.min_x, -1.0);
+        assert_eq!(bbox.max_x, 1.0);
+        assert_eq!(bbox.min_y, 0.0);
+        assert_eq!(bbox.max_y, bezier.get(0.5).1);
+        assert!(bbox.max_y > 0.0);
+        assert!(bbox.max_y < 1.0);
+    }
 }
-
-
