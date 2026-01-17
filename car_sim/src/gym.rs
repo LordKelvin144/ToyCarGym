@@ -2,6 +2,10 @@ use crate::physics::{CarState, CarInput, CarConfig};
 use crate::map::{Road, SplineMap};
 use crate::lidar::LidarArray;
 use math_utils::spline::ClosestPointOutput;
+use math_utils::root::find_root;
+
+use rand::{Rng, SeedableRng};
+use rand_pcg;
 
 
 #[repr(u8)]
@@ -91,13 +95,29 @@ pub struct Simulator<R>
     pub state: CarState,
     t: f32,
     i: usize,
+    init_rng: rand_pcg::Pcg64,
 }
 
 
 
 impl Simulator<SplineMap> {
-    pub fn reset(&mut self) {
-        self.state = CarState::default();
+    pub fn reset(&mut self, seed: Option<u64>) {
+
+        // Sample a point uniformly along the arc
+        let rng = match seed {
+            Some(seed) => &mut rand_pcg::Pcg64::seed_from_u64(seed),
+            None => &mut self.init_rng,
+        };
+        let arc = self.road.spline.total_length() * rng.random::<f32>();
+
+        // Find the parameter of the point
+        let f = |u| { self.road.spline.arc_length(u) - arc };
+        let u = find_root(f, 0.0, self.road.spline.total_length(), 0.05).expect("root to exist given curated range");
+
+        let position = self.road.spline.get(u);
+        let unit_forward = self.road.spline.tangent(u);
+
+        self.state = CarState { position, unit_forward, ..CarState::default() };
         self.t = 0.0;
         self.i = 0;
     }
@@ -138,10 +158,15 @@ impl Simulator<SplineMap> {
 }
 
 impl Simulator<SplineMap> {
-    pub fn new(config: SimConfig, road: SplineMap) -> Self {
+    pub fn new(config: SimConfig, road: SplineMap, seed: Option<u64>) -> Self {
         let state = CarState::default();
 
-        Self { config, road, state, t: 0.0, i: 0 }
+        let init_rng = match seed {
+            Some(seed) => rand_pcg::Pcg64::seed_from_u64(seed),
+            None => rand_pcg::Pcg64::from_rng(&mut rand::rng()),
+        };
+
+        Self { config, road, state, t: 0.0, i: 0, init_rng}
     }
 
     fn reward(&self, state: &CarState, new_state: &CarState, is_crashed: bool) -> f32 {
@@ -181,13 +206,14 @@ mod tests {
     fn make_sim() -> Simulator<SplineMap> {
         let config = SimConfig { dt: 0.25, ..SimConfig::default() };
         let road = map::make_oval();
-        Simulator::new(config, road)
+        Simulator::new(config, road, Some(0))
     }
 
     #[test]
     fn test_stable() {
         let mut env = make_sim();
-        env.reset();
+        env.reset(None);
+        env.reset(Some(0));
         let _observation = env.step(Action::Accelerate);
         let _observation = env.step(Action::Brake);
         let _observation = env.step(Action::Left);
@@ -202,7 +228,7 @@ mod tests {
         let mut done = false;
         let mut reward = 0.0;
 
-        env.reset();
+        env.reset(Some(0));
 
         // Accelerate uncontrollably; should crash eventually
         for _ in 1 .. 50 {

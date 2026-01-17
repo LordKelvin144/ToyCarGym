@@ -22,7 +22,7 @@ struct RacingEnv {
 impl RacingEnv {
     #[new]
     #[pyo3(
-        signature = (dt=None, crash_reward=None, travel_coeff=None, center_coeff=None, center_integral_coeff=None, observe_delta=true, observe_speed=true)
+        signature = (dt=None, crash_reward=None, travel_coeff=None, center_coeff=None, center_integral_coeff=None, observe_delta=true, observe_speed=true, seed=None)
     )]
     fn new(
         dt: Option<f32>,
@@ -31,7 +31,8 @@ impl RacingEnv {
         center_coeff: Option<f32>,
         center_integral_coeff: Option<f32>,
         observe_delta: bool,
-        observe_speed: bool
+        observe_speed: bool,
+        seed: Option<u64>,
     ) -> Self {
         let mut config = gym::SimConfig::default();
         if let Some(dt) = dt {
@@ -51,11 +52,14 @@ impl RacingEnv {
         }
 
         let road = map::make_racetrack();
-        Self { sim: gym::Simulator::new(config, road), observe_delta, observe_speed }
+        let mut this = Self { sim: gym::Simulator::new(config, road, seed), observe_delta, observe_speed };
+        this.reset(None);
+        this
     }
 
-    fn reset(&mut self) {
-        self.sim.reset()
+    #[pyo3( signature = (seed=None) )]
+    fn reset(&mut self, seed: Option<u64>) {
+        self.sim.reset(seed)
     }
 
     fn step(&mut self, action: u8) -> PyResult<(f32, bool)> {
