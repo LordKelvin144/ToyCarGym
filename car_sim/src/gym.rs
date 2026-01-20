@@ -126,9 +126,10 @@ impl Simulator<SplineMap> {
         let SimConfig { dt, car: car_cfg, .. } = &self.config;
         let dt = *dt;
 
+        let delta_factor = 5.0 / self.state.speed.max(5.0);
         let input = match action {
-            Action::Left => CarInput { forward_acc: 0.0, target_delta: car_cfg.max_delta, braking: false },
-            Action::Right => CarInput { forward_acc: 0.0, target_delta: -car_cfg.max_delta, braking: false },
+            Action::Left => CarInput { forward_acc: 0.0, target_delta: car_cfg.max_delta*delta_factor, braking: false },
+            Action::Right => CarInput { forward_acc: 0.0, target_delta: -car_cfg.max_delta*delta_factor, braking: false },
             Action::Accelerate => CarInput { forward_acc: car_cfg.acceleration, target_delta: 0.0, braking: false },
             Action::Brake => CarInput { forward_acc: 0.0, target_delta: 0.0, braking: true },
             Action::Coast => CarInput { forward_acc: 0.0, target_delta: 0.0, braking: false },

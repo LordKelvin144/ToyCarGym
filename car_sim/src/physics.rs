@@ -61,7 +61,7 @@ fn inv_turn_radius(config: &CarConfig, delta: f32) -> f32 {
 impl CarState {
     pub fn update(&self, input: &CarInput, dt: f32, config: &CarConfig) -> Self {
         // Update the steering wheel
-        let steer_delta = Self::steer_update(self.steer_delta, input.target_delta, dt, config);
+        let steer_delta = self.steer_update(input.target_delta, dt, config);
 
         // Current speed
         let speed = self.speed;
@@ -138,11 +138,12 @@ impl CarState {
         Self { position: new_position, speed: new_speed, unit_forward: new_unit_forward, steer_delta }
     }
 
-    fn steer_update(delta: f32, target_delta: f32, dt: f32, config: &CarConfig) -> f32 {
-        let direction = (target_delta - delta).signum();
+    fn steer_update(&self, target_delta: f32, dt: f32, config: &CarConfig) -> f32 {
+        let direction = (target_delta - self.steer_delta).signum();
+        let steer_speed_factor = 10.0 / self.speed.max(10.0);
 
-        let step = dt*direction*config.steer_speed;
-        let new_delta = delta + step;
+        let step = dt*direction*config.steer_speed*steer_speed_factor;
+        let new_delta = self.steer_delta + step;
         if (target_delta-new_delta)*direction > 0.0 {
             new_delta
         } else {
