@@ -5,7 +5,7 @@ use math_utils::{Vec2, spline};
 
 pub struct ScreenTransform {
     px_per_m: f32,
-    center_m: Vec2<f32>,
+    center_m: Vec2,
 }
 
 
@@ -14,14 +14,14 @@ impl ScreenTransform {
         Self { px_per_m, center_m: Vec2(0.0, 0.0) }
     }
 
-    pub fn to_screen(&self, world: Vec2<f32>) -> mq::Vec2 {
+    pub fn to_screen(&self, world: Vec2) -> mq::Vec2 {
         let center_px = mq::Vec2 { x: mq::screen_width()*0.5, y: mq::screen_height()*0.5 };
         let world_center_dev = world - self.center_m;
 
         mq::Vec2 { x: world_center_dev.0 * self.px_per_m, y: -world_center_dev.1*self.px_per_m } + center_px
     }
 
-    pub fn set_center(&mut self, center: Vec2<f32>) {
+    pub fn set_center(&mut self, center: Vec2) {
         self.center_m = center;
     }
 }

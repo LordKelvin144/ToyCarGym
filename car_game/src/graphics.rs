@@ -42,7 +42,7 @@ pub fn draw_car(state: &CarState, config: &CarConfig, transform: &ScreenTransfor
     let fl_wheel = bl_wheel + front_wheel_to_back_wheel;
     let fr_wheel = br_wheel + front_wheel_to_back_wheel;
 
-    let draw_wheel = |center: Vec2<f32>, angle: f32| {
+    let draw_wheel = |center: Vec2, angle: f32| {
         let unit_wheel = state.unit_forward.rotate(angle);
         let half_wheel = unit_wheel*0.5*WHEEL_LENGTH * config.length;
 

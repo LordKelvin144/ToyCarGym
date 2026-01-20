@@ -37,18 +37,18 @@ impl CellMap {
         Self { cells, cell_size, idx_map, min_x, max_x, min_y, max_y}
     }
 
-    pub fn cell(&self, p1: Vec2::<f32>) -> Cell {
+    pub fn cell(&self, p1: Vec2) -> Cell {
         let cell_float_vec = p1 / self.cell_size;
         Cell(cell_float_vec.0.round() as i32, cell_float_vec.1.round() as i32)
     }
 
-    fn cell_idx(&self, p1: Vec2::<f32>) -> Option<usize> {
+    fn cell_idx(&self, p1: Vec2) -> Option<usize> {
         let cell = self.cell(p1);
         self.idx_map.get(&cell).copied()
     }
 
 
-    fn step_is_along(&self, p1: Vec2::<f32>, p2: Vec2::<f32>) -> bool {
+    fn step_is_along(&self, p1: Vec2, p2: Vec2) -> bool {
         let c1 = self.cell(p1);
         let c2 = self.cell(p2);
         self.contiguous_cells(Some(&c1), Some(&c2))
@@ -88,7 +88,7 @@ impl Road for CellMap {
 
     /// Takes in a point and (non-normalized) direction defining a ray,
     /// and finds the first intersection with the edge of the track.
-    fn ray_collision(&self, point: Vec2::<f32>, direction: Vec2::<f32>) -> Vec2::<f32> {  
+    fn ray_collision(&self, point: Vec2, direction: Vec2) -> Vec2 {  
         // p + t*d = (x, n)
         // p.y + t*d.y = n
         // t = (n - p.y) / d.y  

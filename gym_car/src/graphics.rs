@@ -21,8 +21,8 @@ pub struct SplineRoadExport {
 
 
 struct SplineRoadExporter {
-    left: Vec<Vec2<f32>>,
-    right: Vec<Vec2<f32>>,
+    left: Vec<Vec2>,
+    right: Vec<Vec2>,
 }
 
 
@@ -34,7 +34,7 @@ impl SplineRoadExporter {
         }
     }
 
-    fn push(&mut self, left: Vec2<f32>, right: Vec2<f32>) {
+    fn push(&mut self, left: Vec2, right: Vec2) {
         self.left.push(left);
         self.right.push(right);
     }

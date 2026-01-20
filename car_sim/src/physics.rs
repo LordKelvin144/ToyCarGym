@@ -15,8 +15,8 @@ pub struct CarConfig {
 
 #[derive(Debug, Clone)]
 pub struct CarState {
-    pub position: Vec2::<f32>,
-    pub unit_forward: Vec2::<f32>,
+    pub position: Vec2,
+    pub unit_forward: Vec2,
     pub speed: f32,
     pub steer_delta: f32,
 }

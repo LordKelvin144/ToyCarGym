@@ -20,7 +20,7 @@ impl SplineMap {
         SplineMap { spline, width, max_d2 }
     }
 
-    fn point_inside(&self, point: Vec2<f32>) -> bool {
+    fn point_inside(&self, point: Vec2) -> bool {
         let ClosestPointOutput { distance_sq, ..} = self.spline.closest_point(point);
         distance_sq < self.max_d2
     }
@@ -37,7 +37,7 @@ impl Road for SplineMap {
 
     /// Takes in a point and (non-normalized) direction defining a ray,
     /// and finds the first intersection with the edge of the track.
-    fn ray_collision(&self, point: Vec2::<f32>, direction: Vec2::<f32>) -> Vec2::<f32> {  
+    fn ray_collision(&self, point: Vec2, direction: Vec2) -> Vec2 {  
         let step_length = self.width * 0.1;
         let step = direction.normalized() * step_length;
         let mut p = point;

@@ -7,13 +7,13 @@ use super::root::{FunctionObservation, find_min_differentiable};
 
 
 pub struct CubicBezier {
-    pub start: Vec2<f32>,
-    pub p1: Vec2<f32>,
-    pub p2: Vec2<f32>,
-    pub end: Vec2<f32>,
-    c1: Vec2<f32>,
-    c2: Vec2<f32>,
-    c3: Vec2<f32>,
+    pub start: Vec2,
+    pub p1: Vec2,
+    pub p2: Vec2,
+    pub end: Vec2,
+    c1: Vec2,
+    c2: Vec2,
+    c3: Vec2,
     arc_length: f32,
     bounding_box: BoundingBox,
 }
@@ -25,7 +25,7 @@ struct BoundingBox {
     pub max_x: f32,
     pub min_y: f32,
     pub max_y: f32,
-    pub corners: [Vec2<f32>; 4]
+    pub corners: [Vec2; 4]
 }
 
 impl BoundingBox {
@@ -34,7 +34,7 @@ impl BoundingBox {
         Self { min_x, max_x, min_y, max_y, corners }
     }
 
-    pub fn closest_point(&self, point: Vec2::<f32>) -> Vec2::<f32> {
+    pub fn closest_point(&self, point: Vec2) -> Vec2 {
         let Vec2(x, y) = point;
         match (x <= self.min_x, x > self.max_x, y <= self.min_y, y > self.max_y) {
             // Corner quadrants
@@ -57,14 +57,14 @@ impl BoundingBox {
         }
     }
 
-    pub fn farthest_point(&self, point: Vec2::<f32>) -> Vec2::<f32> {
+    pub fn farthest_point(&self, point: Vec2) -> Vec2 {
         let (corner, _d2) = self.corners.iter()
             .map(|corner| {
                 let delta = point - *corner;
                 let d2 = delta.dot(delta);
                 (*corner, d2)
             })
-            .reduce(|(corner, d2): (Vec2<_>, f32), (new_corner, new_d2): (Vec2<_>, f32)| match new_d2.total_cmp(&d2) {
+            .reduce(|(corner, d2): (Vec2, f32), (new_corner, new_d2): (Vec2, f32)| match new_d2.total_cmp(&d2) {
                 Ordering::Greater => (new_corner, new_d2),
                 _ => (corner, d2),
             })
@@ -76,8 +76,8 @@ impl BoundingBox {
 
 /// Represents a single spline point and its tangent velocity specification
 pub struct BezierControl {
-    pub point: Vec2<f32>,
-    pub velocity: Vec2<f32>,
+    pub point: Vec2,
+    pub velocity: Vec2,
 }
 
 
@@ -95,10 +95,10 @@ pub struct ClosestPointOutput {
 
 
 impl CubicBezier {
-    pub fn new(start: Vec2<f32>, 
-           p1: Vec2<f32>, 
-           p2: Vec2<f32>,
-           end: Vec2<f32>) -> Self {
+    pub fn new(start: Vec2, 
+               p1: Vec2, 
+               p2: Vec2,
+               end: Vec2) -> Self {
         let c1 = (p1-start)*3.0;
         let c2 = start*3.0 - p1*6.0 + p2*3.0;
         let c3 = -start + p1*3.0 - p2*3.0 + end;
@@ -113,15 +113,15 @@ impl CubicBezier {
         this
     }
 
-    pub fn get(&self, t: f32) -> Vec2<f32> {
+    pub fn get(&self, t: f32) -> Vec2 {
         self.start + self.c1 * t + self.c2*t*t + self.c3 * t*t*t
     }
 
-    pub fn velocity(&self, t: f32) -> Vec2<f32> {
+    pub fn velocity(&self, t: f32) -> Vec2 {
         self.c1 + self.c2 * 2.0 * t + self.c3 * 3.0*t*t
     }
 
-    pub fn tangent(&self, t: f32) -> Vec2<f32> {
+    pub fn tangent(&self, t: f32) -> Vec2 {
         self.velocity(t).normalized()
     }
 
@@ -158,7 +158,7 @@ impl CubicBezier {
         BoundingBox::new(min_x, max_x, min_y, max_y)
     }
 
-    pub fn closest_point(&self, point: Vec2<f32>) -> ClosestPointOutput {
+    pub fn closest_point(&self, point: Vec2) -> ClosestPointOutput {
         let f = |t| {
             let pt = self.get(t);
             (pt - point).dot(pt-point)
@@ -204,17 +204,17 @@ impl SmoothBezierSpline {
         (&self.segments[i], i, u.fract())
     }
 
-    pub fn get(&self, u: f32) -> Vec2<f32> {
+    pub fn get(&self, u: f32) -> Vec2 {
         let (segment, _, t) = self.segment_and_t(u);
         segment.get(t)
     }
 
-    pub fn velocity(&self, u: f32) -> Vec2<f32> {
+    pub fn velocity(&self, u: f32) -> Vec2 {
         let (segment, _, t) = self.segment_and_t(u);
         segment.velocity(t)
     }
 
-    pub fn tangent(&self, u: f32) -> Vec2<f32> {
+    pub fn tangent(&self, u: f32) -> Vec2 {
         self.velocity(u).normalized()
     }
 
@@ -232,7 +232,7 @@ impl SmoothBezierSpline {
         self.arc_length(self.segments.len() as f32)
     }
 
-    pub fn closest_point(&self, point: Vec2<f32>) -> ClosestPointOutput {
+    pub fn closest_point(&self, point: Vec2) -> ClosestPointOutput {
 
         // First inspect bounding boxes to get upper bound on distance_sq
         //
