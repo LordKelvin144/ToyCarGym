@@ -82,7 +82,7 @@ pub fn make_oval() -> SplineMap {
     SplineMap::new(spline, width)
 }
 
-pub fn make_racetrack() -> SplineMap {
+pub fn make_simple_racetrack() -> SplineMap {
     let spline = SmoothBezierSpline::new(
         vec![
             BezierControl { point: Vec2(0.0, 0.0), velocity: Vec2(50.0, -10.0) },
@@ -92,6 +92,44 @@ pub fn make_racetrack() -> SplineMap {
             BezierControl { point: Vec2(50.0, 75.0), velocity: Vec2(25.0, -25.0) },
             BezierControl { point: Vec2(0.0, 50.0), velocity: Vec2(-20.0, 0.0) },
             BezierControl { point: Vec2(0.0, 0.0), velocity: Vec2(50.0, -10.0) },
+        ]
+    );
+    let width = 10.0;
+    SplineMap::new(spline, width)
+}
+
+pub fn make_racetrack() -> SplineMap {
+    let spline = SmoothBezierSpline::new(
+        vec![
+            BezierControl { point: Vec2(0.0, 0.0), velocity: Vec2(-30.0, 4.0) },
+            BezierControl { point: Vec2(-168.4, 24.5), velocity: Vec2(-30.0, 4.0) },
+            BezierControl { point: Vec2(-246.0, 36.6), velocity: Vec2(-6.0, 6.0) },
+            BezierControl { point: Vec2(-260.0, 67.6), velocity: Vec2(-6.0, 6.0) },
+            BezierControl { point: Vec2(-296.0, 77.6), velocity: Vec2(-8.0, 8.0) },
+            BezierControl { point: Vec2(-342.5, 192.6), velocity: Vec2(-8.0, 30.0) },
+            BezierControl { point: Vec2(-365.0, 300.6), velocity: Vec2(-8.0, 16.0) },
+            BezierControl { point: Vec2(-417.5, 400.8), velocity: Vec2(-2.0, 16.0) },
+            BezierControl { point: Vec2(-402.0, 437.6), velocity: Vec2(10.0, 8.0) },
+            BezierControl { point: Vec2(-341.0, 445.6), velocity: Vec2(24.0, -10.0) },
+            BezierControl { point: Vec2(-189.0, 367.6), velocity: Vec2(32.0, -18.0) },
+            BezierControl { point: Vec2(-56.8, 277.2), velocity: Vec2(12.0, -4.0) },
+            BezierControl { point: Vec2(44.0, 256.6), velocity: Vec2(8.0, -3.0) },
+            BezierControl { point: Vec2(67.0, 220.6), velocity: Vec2(0.0, -20.0) },
+            BezierControl { point: Vec2(33.0, 182.6), velocity: Vec2(-14.0, -4.0) },
+            BezierControl { point: Vec2(-56.1, 194.9), velocity: Vec2(-19.0, 10.0) },
+            BezierControl { point: Vec2(-147.5, 252.0), velocity: Vec2(-15.0, 4.0) },
+            BezierControl { point: Vec2(-177.1, 249.1), velocity: Vec2(-7.0, -4.0) },
+            BezierControl { point: Vec2(-194.3, 226.9), velocity: Vec2(-3.0, -10.0) },
+            BezierControl { point: Vec2(-196.8, 146.9), velocity: Vec2(4.0, -9.0) },
+            BezierControl { point: Vec2(-161.0, 118.6), velocity: Vec2(16.0, 0.0) },
+            BezierControl { point: Vec2(-119.3, 132.1), velocity: Vec2(8.0, 4.0) },
+            BezierControl { point: Vec2(-71.2, 145.1), velocity: Vec2(15.0, 0.0) },
+            BezierControl { point: Vec2(-32.5, 135.2), velocity: Vec2(8.0, -3.2) },
+            BezierControl { point: Vec2(156.6, 57.3), velocity: Vec2(8.0, -3.2) },
+            BezierControl { point: Vec2(176.2, 33.9), velocity: Vec2(0.0, -15.0) },
+            BezierControl { point: Vec2(152.8, -3.1), velocity: Vec2(-12.0, -6.0) },
+            BezierControl { point: Vec2(101.7, -13.7), velocity: Vec2(-12.0, 0.0) },
+            BezierControl { point: Vec2(0.0, 0.0), velocity: Vec2(-30.0, 4.0) },
         ]
     );
     let width = 10.0;

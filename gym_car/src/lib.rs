@@ -51,7 +51,7 @@ impl RacingEnv {
             config.reward.center_integral_coeff = center_integral_coeff;
         }
 
-        let road = map::make_racetrack();
+        let road = map::make_simple_racetrack();
         let mut this = Self { sim: gym::Simulator::new(config, road, seed), observe_delta, observe_speed };
         this.reset(None);
         this
