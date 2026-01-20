@@ -2,7 +2,6 @@
 [workspace]
 members = [
     "math_utils",
-    "data_utils",
     "graphics_utils",
     "car_sim",
     "car_game",
