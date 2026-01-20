@@ -6,5 +6,4 @@ edition = "2024"
 [dependencies]
 math_utils = { path = "../math_utils" }
 macroquad = "0.4.14"
-itertools = "0.14.0"
 
