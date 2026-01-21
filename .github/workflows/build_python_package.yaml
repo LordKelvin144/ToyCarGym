@@ -60,6 +60,8 @@ jobs:
           #   target: aarch64
           #   python_arch: arm64
         python: 
+          - version: "3.11"
+            abi: "cp311"
           - version: "3.12"
             abi: "cp312"
           - version: "3.13"

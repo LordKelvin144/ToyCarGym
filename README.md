@@ -51,7 +51,7 @@ For an optimized build:
 ```bash
 maturin develop --release
 ```
-There are also a number of pre-built wheels available under [releases](https://github.com/LordKelvin144/ToyCarGym/releases) that can be installed directly. Note that numpy must still be installed manually.
+There are also a number of pre-built wheels available under [releases](https://github.com/adjohansson/ToyCarGym/releases) that can be installed directly. Note that numpy must still be installed manually.
 
 ## Python API example
 ```python
