@@ -38,9 +38,9 @@ Clone the repo and create a virtual environment:
 python3 -m venv venv
 source venv/bin/activate
 ```
-Install the maturin build system for exporting Python bindings:
+Install the maturin build system for exporting Python bindings, and numpy if not already present
 ```bash
-pip install maturin
+pip install maturin numpy
 ```
 Install the `gym_car` package to the environment:
 ```bash
