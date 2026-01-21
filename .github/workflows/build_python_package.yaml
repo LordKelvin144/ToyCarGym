@@ -59,12 +59,16 @@ jobs:
           # - runner: windows-11-arm
           #   target: aarch64
           #   python_arch: arm64
-        python_version: ["3.11", "3.12", "3.13"]
+        python: 
+          - version: "3.11"
+            abi: "cp311"
+          - version: "3.12"
+            abi: "cp312"
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python_version }}
+          python-version: ${{ matrix.python.version }}
           architecture: ${{ matrix.platform.python_arch }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
@@ -75,7 +79,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v5
         with:
-          name: wheels-windows-${{ matrix.platform.target }}
+          name: wheels-windows-${{ matrix.platform.target }}-${{ matrix.python.abi }}
           path: dist
 
   macos:
