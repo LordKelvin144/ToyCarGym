@@ -4,10 +4,21 @@ build-backend = "maturin"
 
 [project]
 name = "gym_car"
-requires-python = ">=3.8"
+authors = [
+  { name="Adam Johansson", email="adam.johansson.144@gmail.com" },
+]
+description = "A simple Gym-like environment for 2D toy car racing."
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    "Private :: Do Not Upload",
 ]
 dynamic = ["version"]
+
+
+[project.urls]
+Homepage = "https://github.com/LordKelvin144/ToyCarRL"
+Issues = "https://github.com/LordKelvin144/ToyCarRL/issues"
+
